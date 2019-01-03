@@ -8,7 +8,7 @@
       "type": "router",
       "name": "data",
       "initializerLookupMethod": "external",
-      "fileName": "configService.js",
+      "filename": "configService.js",
       "routerFactory": "configRouter",
       "dependenciesIncluded": true,
       "version": "1.0.0"

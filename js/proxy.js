@@ -56,7 +56,7 @@ function convertOptions(request, realHost, realPort, urlPrefix) {
 
 function makeSimpleProxy(host, port, options, pluginID, serviceName) {
   if (!(host && port)) {
-    throw new Error("Proxy: need a host and port");
+    throw new Error(`Proxy (${pluginID}:${serviceName}) setup failed. Host & Port for proxy destination are required but were missing. For information on how to configure a proxy service, see the Zowe wiki on dataservices (https://github.com/zowe/zlux/wiki/ZLUX-Dataservices)`);
   }
   const {urlPrefix, isHttps, addProxyAuthorizations, allowInvalidTLSProxy} = 
     options;

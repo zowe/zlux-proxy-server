@@ -1,0 +1,294 @@
+{
+    "$id": "http://example.com/schemas/pluginDefinitionSchema.json",
+    "apiVersion": "1.0.0",
+    "type": "object",
+    "if": {
+        "properties": {
+            "pluginType": {
+                "const": "library"
+            }
+        }
+    },
+    "then": {
+        "required": ["libraryName", "libraryVersion"]
+    },
+    "else": {
+        "if": {
+            "properties": {
+                "pluginType": {
+                    "const": "nodeAuthentication"
+                }
+            }
+        },
+        "then": {
+            "required": ["authenticationCategory", "filename"]
+        },
+        "else": {
+            "if": {
+                "properties": {
+                    "pluginType": {
+                        "const": "desktop"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "webContent": {
+                        "if": {
+                            "additionalProperties": false
+                        },
+                        "then": {},
+                        "else": {
+                            "allOf": [
+                                { "$ref": "webContentSchema.json#/definitions/webContent" },
+                                { "required": ["framework"] }
+                            ]
+                        }
+                    }
+                }
+            },
+            "else": {
+                "properties": {
+                    "webContent": {
+                        "if": {
+                            "additionalProperties": false
+                        },
+                        "then": {},
+                        "else": {
+                            "allOf": [
+                                { "$ref": "webContentSchema.json#/definitions/webContent" },
+                                {"required": ["framework", "launchDefinition", "descriptionKey", "descriptionDefault", "defaultWindowStyle"] }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "properties": {
+        "pluginType": {
+            "type": "string",
+            "enum": ["application", "bootstrap", "desktop", "library", "nodeAuthentication", "windowManager"],
+            "errorMessage": {
+                "type": "must be a string",
+                "enum": "must be one of the following values: \n  application\n  bootstrap\n  desktop\n  library\n  nodeAuthentication\n  windowManager"
+            }
+        },
+        "identifier": {
+            "type": "string",
+            "errorMessage": {
+                "type": "must be a string"
+            }
+        },
+        "pluginVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-.+)?$",
+            "errorMessage": {
+                "type": "must be a string",
+                "pattern": "must follow semantic versioning spec (x.y.z-anything)"
+            }
+        },
+        "apiVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-.+)?$",
+            "errorMessage": {
+                "type": "must be a string",
+                "pattern": "must follow semantic versioning spec (x.y.z-anything)"
+            }
+        },
+        "configurationData": {
+            "type": "object",
+            "properties": {
+                "resources": {
+                    "type": "object",
+                    "errorMessage": {
+                        "type": "must be an object"
+                    }
+                }
+            },
+            "required": ["resources"],
+            "errorMessage": {
+                "required": "is required for configurationData in plugin"
+            }
+        },
+        "dataServices": {
+            "type": "array",
+            "if": {
+                "maxItems": 0
+            },
+            "then": {},
+            "else": {
+                "items": {
+                    "type": "object",
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "router"
+                            }
+                        }
+                    },
+                    "then": {
+                        "required": ["name", "initializerLookupMethod", "filename", "dependenciesIncluded"]
+                    },
+                    "else": {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "service"
+                                }
+                            }
+                        },
+                        "then": {
+                            "required": ["name", "initializerLookupMethod", "initializerName", "methods"]
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "type": {
+                                        "const": "import"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "required": ["sourcePlugin", "sourceName", "localName"]
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "type": {
+                                            "const": "external"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "required": ["name", "urlPrefix", "isHttps"]
+                                }
+                            }
+                        }
+                    },
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["import", "external", "service", "router"],
+                            "errorMessage": {
+                                "type": "must be a string",
+                                "enum": "must be one of the following values: \n  import\n  external\n  service\n  router"
+                            }
+                        },
+                        "sourcePlugin": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "sourceName": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "localName": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "name": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "urlPrefix": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "isHttps": {
+                            "type": "boolean",
+                            "errorMessage": {
+                                "type": "must be a boolean"
+                            }
+                        },
+                        "initializerLookupMethod": {
+                            "type": "string",
+                            "enum": ["internal", "external"],
+                            "errorMessage": {
+                                "type": "must be a string",
+                                "enum": "must be one of the following values:\n  internal\n  external"
+                            }
+                        },
+                        "initializerName": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "methods": {
+                            "type": "array",
+                            "errorMessage": {
+                                "type": "must be an array"
+                            }
+                        },
+                        "filename": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "routerFactory": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "dependenciesIncluded": {
+                            "type": "boolean",
+                            "errorMessage": {
+                                "type": "must be a boolean"
+                            }
+                        }
+                    },
+                    "required": ["type"],
+                    "errorMessage": {
+                        "type": "must be an object",
+                        "required": "is required in non-empty data service"
+                    }
+                }
+            },
+            "errorMessage": {
+                "type": "must be an array"
+            }
+        },
+        "libraryName": {
+            "type": "string",
+            "errorMessage": "must be a string"
+        },
+        "libraryVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-.+)?$",
+            "errorMessage": {
+                "type": "must be a string",
+                "pattern": "must follow semantic versioning spec (x.y.z-anything)"
+            }
+        },
+        "authenticationCategory": {
+            "type": "string",
+            "errorMessage": {
+                "type": "must be a string"
+            }
+        },
+        "filename": {
+            "type": "string",
+            "errorMessage": {
+                "type": "must be a string"
+            }
+        }
+    },
+    "required": ["pluginType", "identifier", "pluginVersion", "apiVersion"],
+    "errorMessage": {
+        "type": "must be an object",
+        "required": "is required in pluginDefinition.json"
+    }
+}

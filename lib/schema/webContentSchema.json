@@ -1,0 +1,102 @@
+{
+    "$id" : "http://example.com/schemas/webContentSchema.json",
+    "definitions": {
+        "webContent": {
+            "type": "object",
+            "if": {
+                "properties": {
+                    "framework": {
+                        "const": "iframe"
+                    }
+                }
+            },
+            "then": {
+                "required": ["startingPage"]
+            },
+            "properties": {
+                "framework": {
+                    "type": "string",
+                    "enum": ["angular2", "react", "iframe"],
+                    "errorMessage": {
+                        "type": "must be a string",
+                        "enum": "Valid values for framework are angular2, react, and iframe"
+                    }
+                },
+                "launchDefinition": {
+                    "type": "object",
+                    "errorMessage": {
+                        "type": "must be an object"
+                    },
+                    "properties": {
+                        "pluginShortNameKey": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "pluginShortNameDefault": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        },
+                        "imageSrc": {
+                            "type": "string",
+                            "errorMessage": {
+                                "type": "must be a string"
+                            }
+                        }
+                    },
+                    "required": ["pluginShortNameKey", "pluginShortNameDefault"]
+                },
+                "startingPage": {
+                    "type": "string",
+                    "errorMessage": {
+                        "type": "must be a string"
+                    }
+                },
+                "descriptionDefault": {
+                    "type": "string",
+                    "errorMessage": {
+                        "type": "must be a string"
+                    }
+                },
+                "defaultWindowStyle": {
+                    "type": "object",
+                    "properties": {
+                        "width": {
+                            "type": "integer",
+                            "errorMessage": {
+                                "type": "must be an integer"
+                            }
+                        },
+                        "height": {
+                            "type": "integer",
+                            "errorMessage": {
+                                "type": "must be an integer"
+                            }
+                        },
+                        "x": {
+                            "type": "integer",
+                            "errorMessage": {
+                                "type": "must be an integer"
+                            }
+                        },
+                        "y": {
+                            "type": "integer",
+                            "errorMessage": {
+                                "type": "must be an integer"
+                            }
+                        }
+                    },
+                    "errorMessage": {
+                        "type": "must be an object"
+                    }
+                }
+            },
+            "errorMessage": {
+                "type": "must be an object"
+            }
+        }
+    }
+}

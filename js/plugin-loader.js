@@ -24,6 +24,7 @@ const semver = require('semver');
 const zluxUtil = require('./util');
 const jsonUtils = require('./jsonUtils.js');
 const configService = require('../plugins/config/lib/configService.js');
+const pluginDefinitionValidation = require('./pluginDefinitionValidation.js')
 const DependencyGraph = require('./depgraph');
 const translationUtils = require('./translation-utils.js');
 const makeSwaggerCatalog = require('./swagger-catalog');
@@ -45,6 +46,9 @@ const defaultOptions = {
   pluginsDir: null,
   serverConfig: null
 }
+
+var uniquePluginIdentifiers = []
+var uniquePluginPaths = []
 
 function Service(def, configuration, plugin) {
   this.configuration = configuration;
@@ -556,10 +560,16 @@ PluginLoader.prototype = {
       throw new Error(`${pluginDef.identifier} and ${pluginPtrDef.identifier} `
           + `don't match - plugin ignored`);
     }
-    if (!pluginDef.pluginType) {
-      throw new Error(`No plugin type found for ${pluginDef.identifier} `
-      + `found at ${pluginBasePath}, skipping`)
+    bootstrapLogger.info(`Validating Plugin Definition at ${pluginBasePath}/pluginDefinition.json`)
+    if(!pluginDefinitionValidation.validatePluginDef(pluginDef)){
+      throw new Error(`${pluginDef.identifier} is invalid`)
     }
+    var identifierIndex = uniquePluginIdentifiers.indexOf(pluginDef.identifier);
+    if(identifierIndex > -1) {
+      throw new Error(`Error in file ${pluginDefPath}.  The identifier '${pluginDef.identifier}' is already used in file ${uniquePluginPaths[identifierIndex]}.  Please choose a unique identifier.`)
+    }
+    uniquePluginIdentifiers.push(pluginDef.identifier)
+    uniquePluginPaths.push(pluginDefPath)
     bootstrapLogger.info(`Read ${pluginBasePath}: found plugin type `
         + `'${pluginDef.pluginType}'`);
     pluginDef.location = pluginBasePath;
@@ -580,7 +590,6 @@ PluginLoader.prototype = {
         const plugin = this._readPluginDef(pluginDescriptorFilename);
         defs.push(plugin);
       } catch (e) {
-        console.log(e);
         bootstrapLogger.warn(e)
         bootstrapLogger.log(bootstrapLogger.INFO,
           `Failed to load ${pluginDescriptorFilename}\n`);

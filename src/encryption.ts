@@ -12,16 +12,16 @@
 
 const crypto = require("crypto");
 
-function encryptWithKey(text,key) {
+export function encryptWithKey(text: string, key: any) {
   var cipher = crypto.createCipher('AES-256-CTR',key);
   var encrypted = cipher.update(text,'utf8','hex');
   encrypted += cipher.final('hex');
   return encrypted;
 }
 
-function getKeyFromPassword(password,salt,length,callback) {
+export function getKeyFromPassword(password: any, salt: any, length: any, callback: any) {
   var rounds = 500;
-  crypto.pbkdf2(password,salt,rounds,length,'sha256',(error, derivedKey) => {
+  crypto.pbkdf2(password,salt,rounds,length,'sha256',(error: any, derivedKey: any) => {
     if (error) {
       throw error;
     }
@@ -31,31 +31,26 @@ function getKeyFromPassword(password,salt,length,callback) {
   });
 }
 
-function encryptWithKeyAndIV(text,key,iv) {
+export function encryptWithKeyAndIV(text: string,key: any,iv: any) {
   var cipher = crypto.createCipheriv('AES-256-CBC',key,iv);
   var encrypted = cipher.update(text,'utf8','hex');
   encrypted += cipher.final('hex');
   return encrypted;
 }
 
-function decryptWithKey(text,key) {
+export function decryptWithKey(text: string,key: any) {
   var decipher = crypto.createDecipher('AES-256-CTR',key);
   var decrypted = decipher.update(text,'hex','utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
 }
 
-function decryptWithKeyAndIV(text,key,iv) {
+export function decryptWithKeyAndIV(text: string,key: any,iv: any) {
   var cipher = crypto.createDecipheriv('AES-256-CBC',key,iv);
   var decrypted = cipher.update(text,'hex','utf8');
   decrypted += cipher.final('utf8');
   return decrypted;
 }
-exports.encryptWithKeyAndIV = encryptWithKeyAndIV;
-exports.decryptWithKeyAndIV = decryptWithKeyAndIV;
-exports.getKeyFromPassword = getKeyFromPassword;
-exports.encryptWithKey = encryptWithKey;
-exports.decryptWithKey = decryptWithKey;
 
 
 /*

@@ -10,12 +10,12 @@
   Copyright Contributors to the Zowe Project.
 */
 
-exports.constants = {
+export const constants = {
   ARG_TYPE_FLAG: 1,
   ARG_TYPE_VALUE: 2
-};
+}
 
-function CLIArgument(longName, shortName, type) {
+export function CLIArgument(longName: string, shortName: string, type: string) {
   if (!longName || (type != exports.constants.ARG_TYPE_FLAG && type != exports.constants.ARG_TYPE_VALUE)) {
     console.log("WARNING: CLI Argument missing name ("+longName+") or has unsupported type="+type);
     return null;
@@ -25,7 +25,7 @@ function CLIArgument(longName, shortName, type) {
   var argName = longName;
   var argType = type;
 
-  var getMatch = function(string, nextString) {
+  var getMatch = function(string: string, nextString: string) {
     if (longMatch && string.startsWith(longMatch)) {
       if (argType === exports.constants.ARG_TYPE_FLAG) {
         return {arg: argName, value: true};
@@ -56,11 +56,11 @@ function CLIArgument(longName, shortName, type) {
 };
 exports.CLIArgument = CLIArgument;
 
-function ArgumentParser(validArgs, argArray) {
+export function ArgumentParser(validArgs: any, argArray: any[]) {
   var validArguments = validArgs;
   var args = argArray;
 
-  var parse = function(args) {
+  var parse = function(args: any) {
     var argumentValues = {};
     var arg;
     var validArg;
@@ -72,7 +72,7 @@ function ArgumentParser(validArgs, argArray) {
         if (validArg) {
           var result = validArguments[j].getMatch(arg, (i < (args.length-1)) ? args[i+1] : null);
           if (result && result.arg && result.value) {
-            argumentValues[result.arg] = result.value;
+            (argumentValues as any)[result.arg] = result.value;
             if (result.value == args[i+1]) {
               i++;
             }
@@ -89,8 +89,9 @@ function ArgumentParser(validArgs, argArray) {
   };
   return {parse: parse};
 }
-exports.createParser = function(stringArray) {
-  return new ArgumentParser(stringArray);
+
+export function createParser(stringArray: string[]) {
+  return new (ArgumentParser as any)(stringArray);
 };
 
 

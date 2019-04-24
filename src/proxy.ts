@@ -22,14 +22,15 @@ const util = require('./util');
 const unpconst = require('./unp-constants');
 const WebSocket = require('ws');
 const net = require('net');
+const url = require('./url')
 
 const proxyLog = util.loggers.proxyLogger;
 
-function convertOptions(request, realHost, realPort, urlPrefix) {
-  var options = {};
+export function convertOptions(request: any, realHost: any, realPort: any, urlPrefix: string) {
+  var options: any = {};
   proxyLog.debug("request host " + request.headers.host);
   var headers = request.headers;
-  var newHeaders = {};
+  var newHeaders: any = {};
   for (var propName in headers) {
     if (headers.hasOwnProperty(propName)) {
       proxyLog.debug("header["+propName+"]="+headers[propName]);
@@ -54,7 +55,7 @@ function convertOptions(request, realHost, realPort, urlPrefix) {
   return options;
 }
 
-function makeSimpleProxy(host, port, options, pluginID, serviceName) {
+export function makeSimpleProxy(host: any, port: any, options: any, pluginID: any, serviceName: string) {
   if (!(host && port)) {
     throw new Error(`Proxy (${pluginID}:${serviceName}) setup failed.\n`
                     + `Host & Port for proxy destination are required but were missing.\n`
@@ -64,7 +65,7 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
   const {urlPrefix, isHttps, addProxyAuthorizations, allowInvalidTLSProxy} = 
     options;
   const httpApi = isHttps? https : http;
-  return function(req1, res1) {
+  return function(req1: any, res1: any) {
     proxyLog.debug("Request: " + req1.protocol + '://' + req1.get('host') + req1.url);
     const requestOptions = convertOptions(req1, host, port, urlPrefix);
     if (isHttps) {
@@ -78,7 +79,7 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
     } else {
       proxyLog.debug('Callservice: no auth helper');
     }
-    const req2 = httpApi.request(requestOptions, (res2) => {
+    const req2 = httpApi.request(requestOptions, (res2: any) => {
       proxyLog.debug("status code" + res2.statusCode);
       res1.status(res2.statusCode);
       const headers = res2.headers;
@@ -103,7 +104,7 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
       }
       res2.pipe(res1);
     });
-    req2.on('error', (e) => {
+    req2.on('error', (e: any) => {
       proxyLog.warn('Callservice: Service call failed.');
       console.warn(e);
       res1.status(500).send(`Unable to complete network request to ${host}:${port}: `
@@ -119,18 +120,18 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
   }
 }
 
-function makeWsProxy(host, port, urlPrefix, isHttps) {
+export function makeWsProxy(host: any, port: any, urlPrefix: any, isHttps: any) {
   // copied and pasted with only minimal fixes to formatting
   var toString = function() {
     return '[Proxy URL: '+urlPrefix+']';
   };
 
-  var logException = function(e) {
+  var logException = function(e: any) {
     proxyLog.warn(toString()+' Exception caught. Message='+e.message);
     proxyLog.warn("Stack trace follows\n"+e.stack);
   };
 
-  var handleProxyWSException = function(e, ws, proxyws) {
+  var handleProxyWSException = function(e: any, ws: any, proxyws: any) {
     logException(e);
     try {
       if (ws) {
@@ -145,7 +146,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
       logException(closeEx);
     }
   };
-  return function(ws, req) {
+  return function(ws: any, req: any) {
     proxyLog.debug(toString()+" WS proxy request to: " + req.originalUrl);
     if (req.originalUrl.indexOf('?') !== -1) {
       const parts = req.originalUrl.split('?');
@@ -166,7 +167,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
     options.url = targetUrl;
     var proxyWs = new WebSocket(targetUrl, options);
     var proxyOpen = false;
-    var bufferedMessages = [];
+    var bufferedMessages: any[] = [];
     var handleBufferedMessages = function() {
       if (bufferedMessages && bufferedMessages.length > 0) {
         for (var i = 0; i < bufferedMessages.length; i++) {
@@ -179,7 +180,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
         bufferedMessages = null;
       }
     };
-    ws.on('message', function(data, flags) {
+    ws.on('message', function(data: any, flags: any) {
       if (!proxyOpen) {
         bufferedMessages.push({data:data, flags:flags});
       }
@@ -196,7 +197,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
         }
       }
     });
-    ws.on('close', function(code, reason) {
+    ws.on('close', function(code: any, reason: any) {
       proxyLog.debug('ws Seen close with code='+code);
       if (code < unpconst.WEBSOCKET_CLOSE_CODE_MINIMUM) {
         //application-level code is not allowed to issue a close
@@ -209,14 +210,14 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
         handleProxyWSException(e,ws,null);
       }
     });
-    ws.on('ping', function(data, flags) {
+    ws.on('ping', function(data: any, flags: any) {
       try {
         proxyWs.ping(data, flags.masked);
       } catch (e) {
         handleProxyWSException(e,ws,proxyWs);
       }
     });
-    ws.on('pong', function(data, flags) {
+    ws.on('pong', function(data: any, flags: any) {
       try {
         proxyWs.pong(data, flags.masked);
       } catch (e) {
@@ -232,7 +233,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
         bufferedMessages = null;
       }
       if (proxyOpen) {
-        proxyWs.on('close', function(code, reason) {
+        proxyWs.on('close', function(code: any, reason: any) {
           proxyLog.debug('proxyws Seen close with code='+code);
           if (code < unpconst.WEBSOCKET_CLOSE_CODE_MINIMUM) {
             //application-level code is not allowed to issue a close
@@ -245,7 +246,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
             handleProxyWSException(e,null,proxyWs);
           }
         });
-        proxyWs.on('message', function(data, flags) {
+        proxyWs.on('message', function(data: any, flags: any) {
           try {
             ws.send(data, {
               binary: flags.binary,
@@ -255,14 +256,14 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
             handleProxyWSException(e,ws,proxyWs);
           }
         });
-        proxyWs.on('ping', function(data, flags) {
+        proxyWs.on('ping', function(data: any, flags: any) {
           try {
             ws.ping(data, flags.masked);
           } catch (e) {
             handleProxyWSException(e,ws,proxyWs);
           }
         });
-        proxyWs.on('pong', function(data, flags) {
+        proxyWs.on('pong', function(data: any, flags: any) {
           try {
             ws.pong(data, flags.masked);
           } catch (e) {
@@ -271,7 +272,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
         });
       }
     });
-    proxyWs.on('error', function(error) {
+    proxyWs.on('error', function(error: any) {
       proxyLog.warn(toString()+" proxyWS error:" + error);
       if (ws) {
         ws.terminate();
@@ -279,7 +280,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
       proxyWs.terminate();
       bufferedMessages = null;
     });
-    ws.on('error', function(error) {
+    ws.on('error', function(error: any) {
       proxyLog.warn(toString()+" WS error:" + error);
       if (proxyWs) {
         proxyWs.terminate();
@@ -290,14 +291,14 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
   };
 };
 
-function checkProxiedHost(host, port) {
+export function checkProxiedHost(host: any, port: any) {
   const client = new net.Socket();
   return new Promise((resolve, reject) => {
     client.connect(port, host, () => {
       client.destroy();
       resolve();
     });
-    client.on('error', (e) => {
+    client.on('error', (e: any) => {
       proxyLog.warn(`Failed to reach the auth services host for address ${host}:${port}`);
       if (host === '127.0.0.1') {
         proxyLog.warn("The auth services host system was not " +
@@ -310,10 +311,6 @@ function checkProxiedHost(host, port) {
     });
   });
 }
-
-exports.makeSimpleProxy = makeSimpleProxy;
-exports.makeWsProxy = makeWsProxy;
-exports.checkProxiedHost = checkProxiedHost;
 
 
 /*

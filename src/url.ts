@@ -10,11 +10,11 @@
 */
 
 
-function makePluginURL(productCode, pluginID) {
+export function makePluginURL(productCode: any, pluginID: any) {
   return `/${productCode}/plugins/${pluginID}`;
 }
 
-function makeServiceSubURL(service, latest, omitVersion) {
+export function makeServiceSubURL(service: any, latest: any, omitVersion: any) {
   let nameForURL;
   if (service.type === 'import') {
     nameForURL = service.localName;
@@ -29,15 +29,9 @@ function makeServiceSubURL(service, latest, omitVersion) {
   }
 }
 
-function join(baseUrl, relativePath) {
+export function join(baseUrl: string, relativePath: string) {
   //TODO a better implementation
   return baseUrl + relativePath;
-}
-
-module.exports = {
-  makePluginURL,
-  makeServiceSubURL,
-  join
 }
 
 /*

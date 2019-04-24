@@ -23,7 +23,7 @@ exports.WEBSOCKET_CLOSE_CODE_MINIMUM = 3000;
 
 exports.APP_NAME = "zlux"; //this seems to be pretty "variable"
 
-exports.setProductCode = function(productCode) {
+exports.setProductCode = function(productCode: any) {
   exports.APP_NAME = productCode.toLowerCase();
 }
 

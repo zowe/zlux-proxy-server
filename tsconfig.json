@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "sourceMap": true,
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "lib": [
+        "es2017", "es6"
+        ],
+        "types": ["bluebird", "node"],
+        "moduleResolution": "node",
+        "outDir": "./lib"
+    },
+    "include": [
+        "./src/**/*"
+    ]
+}

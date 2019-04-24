@@ -1,3 +1,4 @@
+import { AnyRecordWithTtl } from "dns";
 
 /*
   This program and the accompanying materials are
@@ -16,52 +17,54 @@ const unp = require('./unp-constants');
 const bootstrapLogger = util.loggers.bootstrapLogger;
 const childLogger = util.loggers.childLogger;
 
-function ProcessManager(exitOnException) {
-  this.childProcesses = [];
-  this.exitOnException = exitOnException;
-  this.cleanupFunctions = [];
-  process.on('SIGTERM', () => this.endServer('SIGTERM'));
-  process.on('SIGINT', () => this.endServer('SIGINT'));
-  process.on('SIGHUP', () => this.endServer('SIGHUP'));
-  process.on('uncaughtException', (err) => {
-    bootstrapLogger.warn('Uncaught exception found. Error:\n'+err.stack);  
-    if (this.exitOnException) {
-      bootstrapLogger.warn('Ending server process due to uncaught exception.');
-      this.endServer('SIGQUIT');    
-    }
-  });
-  process.on('unhandledRejection', (err) => {
-    console.log('unhandledRejection', err);
-  });
-}
-ProcessManager.prototype = {
-  constructor: ProcessManager,
-  childProcesses: null,
-  
-  spawn(childProcessConfig) {
+export class ProcessManager{
+  public childProcesses: any[];
+  public exitOnException: any;
+  public cleanupFunctions: any[];
+
+  constructor(exitOnException: any) {
+    this.childProcesses = [];
+    this.exitOnException = exitOnException;
+    this.cleanupFunctions = [];
+    process.on('SIGTERM', () => this.endServer('SIGTERM'));
+    process.on('SIGINT', () => this.endServer('SIGINT'));
+    process.on('SIGHUP', () => this.endServer('SIGHUP'));
+    process.on('uncaughtException', (err) => {
+      bootstrapLogger.warn('Uncaught exception found. Error:\n'+err.stack);  
+      if (this.exitOnException) {
+        bootstrapLogger.warn('Ending server process due to uncaught exception.');
+        this.endServer('SIGQUIT');    
+      }
+    });
+    process.on('unhandledRejection', (err) => {
+      console.log('unhandledRejection', err);
+    });
+  }
+
+  spawn(childProcessConfig: any) {
     const args = childProcessConfig.args ? childProcessConfig.args : [];
     const childProcess = spawn(childProcessConfig.path, args);
     this.childProcesses.push(childProcess);
-    childProcess.stdout.on('data', function(data) {
+    childProcess.stdout.on('data', function(data: any) {
       childLogger.info('[Path=' + childProcessConfig.path + ' stdout]: ' + data);
     });
-    childProcess.stderr.on('data', function(data) {
+    childProcess.stderr.on('data', function(data: any) {
       childLogger.warn('[Path=' + childProcessConfig.path + ' stderr]: ' + data);
     });
-    childProcess.on('close', function(code) {
+    childProcess.on('close', function(code: any) {
       childLogger.info('[Path=' + childProcessConfig.path + '] exited, code: ' + code);
     });
-  },
+  }
 
-   endChildren(signal) {
+   endChildren(signal: any) {
      for (const childProcess of this.childProcesses) {
        childProcess.kill(signal);
      }
-   },
+   }
 
-   addCleanupFunction(func) {
+   addCleanupFunction(func: any) {
      this.cleanupFunctions.push(func);
-   },
+   }
 
    performCleanup() {
      for (const cleanupFunction of this.cleanupFunctions) {
@@ -71,9 +74,9 @@ ProcessManager.prototype = {
          bootstrapLogger.warn('Exception at server cleanup function:\n'+err.stack); 
        }
      }
-   },
+   }
 
-   endServer(signal) {
+   endServer(signal: any) {
     bootstrapLogger.info('Server shutting down, received signal='+signal);
     this.endChildren(signal);
     this.performCleanup();

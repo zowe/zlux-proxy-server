@@ -8,7 +8,7 @@
   
   Copyright Contributors to the Zowe Project.
 */
-const Promise = require("bluebird");
+const BBPromise = require("bluebird");
 const eureka = require('eureka-js-client').Eureka;
 const zluxUtil = require('./util');
 
@@ -72,17 +72,23 @@ const MEDIATION_LAYER_INSTANCE_DEFAULTS = {
   }
 };
 
-function ApimlConnector({ hostName, ipAddr, httpPort, httpsPort, apimlHost, 
-    apimlPort, tlsOptions }) {
-  Object.assign(this, { hostName, ipAddr, httpPort, httpsPort, apimlHost, 
-    apimlPort, tlsOptions });
-  this.vipAddress = hostName;
-}
+export class ApimlConnector{
+  public vipAddress: string;
+  private httpPort: string;
+  private httpsPort: string;
+  private hostName: string;
+  private ipAddr: string;
+  private tlsOptions: any;
+  public zluxServerEurekaClient: any;
+  private apimlHost: string;
+  private apimlPort: any;
 
-ApimlConnector.prototype = {
-  constructor: ApimlConnector,
-  
-  _makeMainInstanceProperties(overrides) {
+  constructor({ hostName, ipAddr, httpPort, httpsPort, apimlHost, apimlPort, tlsOptions }: any) {
+    Object.assign(this, { hostName, ipAddr, httpPort, httpsPort, apimlHost, apimlPort, tlsOptions });
+    this.vipAddress = hostName;
+  }
+
+  _makeMainInstanceProperties(overrides?: any) {
     const instance = Object.assign({}, MEDIATION_LAYER_INSTANCE_DEFAULTS);
     Object.assign(instance, overrides);
 
@@ -139,7 +145,7 @@ ApimlConnector.prototype = {
      log.debug("API ML registration settings:", JSON.stringify(instance));
 
     return instance;
-  },
+  }
 
   /*
    * TODO: commented out as this is a stretch goal
@@ -171,16 +177,15 @@ ApimlConnector.prototype = {
     const zluxProxyServerInstanceConfig = {
       instance: this._makeMainInstanceProperties(),
       eureka: Object.assign({}, MEDIATION_LAYER_EUREKA_DEFAULTS),
-      requestMiddleware: (requestOpts, done) => {
+      requestMiddleware: (requestOpts: any, done: any) => {
         const { pfx, ca, cert, key, passphrase } = this.tlsOptions;
         Object.assign(requestOpts, { pfx, ca, cert, key, passphrase });
         done(requestOpts);
     }
     }
-    log.debug("zluxProxyServerInstanceConfig: " 
-        + JSON.stringify(zluxProxyServerInstanceConfig, null, 2))
-    const url = `https://${this.apimlHost}:${this.apimlPort}/eureka/apps`
-    zluxProxyServerInstanceConfig.eureka.serviceUrls = {
+    log.debug("zluxProxyServerInstanceConfig: " + JSON.stringify(zluxProxyServerInstanceConfig, null, 2))
+    const url = `https://${this.apimlHost}:${this.apimlPort}/eureka/apps`;
+    (zluxProxyServerInstanceConfig.eureka as any).serviceUrls = {
       'default': [
         url
       ]};
@@ -190,7 +195,7 @@ ApimlConnector.prototype = {
     //zluxServerEurekaClient.logger.level('debug');
     this.zluxServerEurekaClient = zluxServerEurekaClient;
     return new Promise(function (resolve, reject) {
-      zluxServerEurekaClient.start(function (error) {
+      zluxServerEurekaClient.start(function (error: any) {
         if (error) {
           log.warn(error);
           reject(error);
@@ -200,7 +205,7 @@ ApimlConnector.prototype = {
         }
       });
     });
-  },
+  }
   
   /*
    * TODO: commented out as this is a stretch goal
@@ -233,6 +238,7 @@ ApimlConnector.prototype = {
   }*/
 }
 
+export{};
 module.exports = ApimlConnector;
 
 /*

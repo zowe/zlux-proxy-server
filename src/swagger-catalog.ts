@@ -13,7 +13,7 @@
 const express = require('express');
 const zLuxUrl = require('./url')
 
-function getServiceSummary(service) {
+export function getServiceSummary(service: any) {
   switch (service.type) {
   case "router":
   case "nodeService":
@@ -25,8 +25,8 @@ function getServiceSummary(service) {
   }
 }
 
-function makeCatalogForPlugin(plugin, productCode) {
-  const openApi = {
+export function makeCatalogForPlugin(plugin: any, productCode: any) {
+  const openApi: any = {
     openapi: "3.0.0",
     info: {
       title:  plugin.identifier,
@@ -78,8 +78,7 @@ function makeCatalogForPlugin(plugin, productCode) {
   return openApi;
 }
 
-module.exports = makeCatalogForPlugin;
-
+export{};
 /*
   This program and the accompanying materials are
   made available under the terms of the Eclipse Public License v2.0 which accompanies

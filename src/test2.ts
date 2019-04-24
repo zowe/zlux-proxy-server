@@ -104,7 +104,7 @@ if (!webServer.isConfigValid(configData)) {
 console.log("config valid");
 webServer.setConfig(configData);
 console.log("will now listen...");
-makeWebApp(context).then((webApp) => {
+makeWebApp(context).then((webApp: any) => {
   webServer.startListening(webApp.expressApp);
 });
 

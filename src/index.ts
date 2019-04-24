@@ -10,7 +10,7 @@
 */
 
 'use strict';
-const Promise = require('bluebird');
+const BBPromise = require('bluebird');
 const util = require('./util');
 const WebServer = require('./webserver');
 const PluginLoader = require('./plugin-loader');
@@ -30,74 +30,76 @@ const defaultOptions = {
   relativePathResolver: util.resolveRelativePathAgainstCWD
 }
 
-function Server(appConfig, userConfig, startUpConfig, options) {
-  this.options = util.makeOptionsObject(defaultOptions, options);
-  this.userConfig = userConfig;
-  this.setLogLevels(userConfig.logLevels);
-  this.appConfig = appConfig;
-  unp.setProductCode(appConfig.productCode);
-  util.deepFreeze(appConfig);
-  util.resolveRelativePaths(userConfig, this.options.relativePathResolver, "config");
-  this.startUpConfig = startUpConfig;
-  util.deepFreeze(startUpConfig);
-  this.processManager = new ProcessManager(true);
-  this.authManager = new AuthManager({
-    config: userConfig.dataserviceAuthentication,
-    productCode:  appConfig.productCode
-  });
-  this.pluginLoader = new PluginLoader({
-    productCode: appConfig.productCode,
-    authManager: this.authManager,
-    pluginsDir: userConfig.pluginsDir,
-    serverConfig: userConfig,
-    relativePathResolver: this.options.relativePathResolver
-  });
-  this.pluginMapRO = util.readOnlyProxy(this.pluginLoader.pluginMap);
-  this.webServer = new WebServer();
-  this.webApp = null;
-  if (process.clusterManager) {
-    process.clusterManager.onAddDynamicPlugin(function(wi, pluginDef) {
-      bootstrapLogger.log(bootstrapLogger.INFO, "adding plugin remotely " + pluginDef.identifier);
-      this.pluginLoader.addDynamicPlugin(pluginDef);
-    }.bind(this));
-  }
-}
-Server.prototype = {
-  constructor: Server,
-  appConfig: null,
-  userConfig: null,
-  startUpConfig: null,
-  pluginManager: null,
-  processManager: null,
-  webApp: null,
-  webServer: null,
-  authManager: null,
+export class Server{
+  private options: any;
+  public userConfig: any;
+  public appConfig: any;
+  public startUpConfig: any;
+  public processManager: any;
+  public authManager: any;
+  public pluginLoader: any;
+  public pluginMapRO: any;
+  public webServer: any;
+  public webApp: any;
 
-  setLogLevels: function(logLevels) {
-    if (logLevels && global.COM_RS_COMMON_LOGGER) {
+  constructor(appConfig: any, userConfig: any, startUpConfig: any, options: any) {
+    this.options = util.makeOptionsObject(defaultOptions, options);
+    this.userConfig = userConfig;
+    this.setLogLevels(userConfig.logLevels);
+    this.appConfig = appConfig;
+    unp.setProductCode(appConfig.productCode);
+    util.deepFreeze(appConfig);
+    util.resolveRelativePaths(userConfig, this.options.relativePathResolver, "config");
+    this.startUpConfig = startUpConfig;
+    util.deepFreeze(startUpConfig);
+    this.processManager = new ProcessManager(true);
+    this.authManager = new AuthManager({
+      config: userConfig.dataserviceAuthentication,
+      productCode:  appConfig.productCode
+    });
+    this.pluginLoader = new PluginLoader({
+      productCode: appConfig.productCode,
+      authManager: this.authManager,
+      pluginsDir: userConfig.pluginsDir,
+      serverConfig: userConfig,
+      relativePathResolver: this.options.relativePathResolver
+    });
+    this.pluginMapRO = util.readOnlyProxy(this.pluginLoader.pluginMap);
+    this.webServer = new WebServer();
+    this.webApp = null;
+    if ((process as any).clusterManager) {
+      (process as any).clusterManager.onAddDynamicPlugin(function(wi: any, pluginDef: any) {
+        bootstrapLogger.log(bootstrapLogger.INFO, "adding plugin remotely " + pluginDef.identifier);
+        this.pluginLoader.addDynamicPlugin(pluginDef);
+      }.bind(this));
+    }
+  }
+
+  setLogLevels(logLevels: any) {
+    if (logLevels && (global as any).COM_RS_COMMON_LOGGER) {
       var logArray = Object.keys(logLevels);
       logArray.forEach(function(logID) {
         var level = logLevels[logID];
         try {
-          global.COM_RS_COMMON_LOGGER.setLogLevelForComponentPattern(logID,level);
+          (global as any).COM_RS_COMMON_LOGGER.setLogLevelForComponentPattern(logID,level);
         } catch (e) {
           bootstrapLogger.warn(`Exception when setting log level for ID="${logID}". E:\n${e.stack}`);
         }
       });
     }    
-  },
+  }
   
-  start: Promise.coroutine(function*() {
+  start = BBPromise.coroutine(function*() {
     if (this.userConfig.node.childProcesses) {
       for (const proc of this.userConfig.node.childProcesses) {
-        if (!process.clusterManager || process.clusterManager.getIndexInCluster() == 0 || !proc.once) {
+        if (!(process as any).clusterManager || (process as any).clusterManager.getIndexInCluster() == 0 || !proc.once) {
           try {
             this.processManager.spawn(proc); 
           } catch (error) {
             bootstrapLogger.warn(`Could not spawn ${JSON.stringify(proc)}: ${error.message}`);
           }  
         } else {
-          bootstrapLogger.log(bootstrapLogger.INFO, `Skip child process spawning on worker ${process.clusterManager.getIndexInCluster()} ${proc.path}\n`);
+          bootstrapLogger.log(bootstrapLogger.INFO, `Skip child process spawning on worker ${(process as any).clusterManager.getIndexInCluster()} ${proc.path}\n`);
         }
       }
     }
@@ -137,7 +139,7 @@ Server.prototype = {
       if either proxiedHost or proxiedPort were specified, then there is intent to connect to an agent.
       However, zlux may be run without one, so if both are undefined then don't check for connection.
     */
-    if (process.platform !== 'os390' &&
+    if ((process.platform as any)!== 'os390' &&
         ((this.startUpConfig.proxiedHost !== undefined) || (this.startUpConfig.proxiedPort !== undefined))) {
       const host = this.startUpConfig.proxiedHost;
       const port = this.startUpConfig.proxiedPort;
@@ -159,16 +161,16 @@ Server.prototype = {
         list: this.pluginLoader.plugins,
         pluginMap: this.pluginLoader.pluginMap
       },
-      newPluginHandler: (pluginDef) => this.newPluginSubmitted(pluginDef),
+      newPluginHandler: (pluginDef: any) => this.newPluginSubmitted(pluginDef),
       auth: webauth
     };
     this.webApp = makeWebApp(webAppOptions);
     this.webServer.startListening(this.webApp.expressApp);
     let pluginsLoaded = [];
-    this.pluginLoader.on('pluginAdded', util.asyncEventListener(event => {
+    this.pluginLoader.on('pluginAdded', util.asyncEventListener((event: any) => {
       return this.pluginLoaded(event.data).then(() => {
         installLogger.info('Installed plugin: ' + event.data.identifier);
-      }, err => {
+      }, (err: any) => {
         installLogger.warn(`Exception occurred, plugin (${event.data.identifier}) installation skipped. `
                            +`Message: ${err.message}`);
         installLogger.debug(err.stack);
@@ -202,17 +204,17 @@ Server.prototype = {
       });
       yield this.apiml.registerMainServerInstance();
     }
-  }),
+  })
 
-  newPluginSubmitted(pluginDef) {
+  newPluginSubmitted(pluginDef: any) {
     installLogger.debug("Adding plugin ", pluginDef);
     this.pluginLoader.addDynamicPlugin(pluginDef);
-    if (process.clusterManager) {
-      process.clusterManager.addDynamicPlugin(pluginDef);
+    if ((process as any).clusterManager) {
+      (process as any).clusterManager.addDynamicPlugin(pluginDef);
     }
-  },
+  }
 
-  pluginLoaded(pluginDef) {
+  pluginLoaded(pluginDef: any) {
     const pluginContext = {
       pluginDef,
       server: {
@@ -230,6 +232,8 @@ Server.prototype = {
   }
 };
 
+
+export{};
 module.exports = Server;
 
 

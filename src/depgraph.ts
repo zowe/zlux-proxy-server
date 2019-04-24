@@ -14,42 +14,37 @@ const semver = require('semver');
 //const assert = require('assert');
 const zluxUtil = require('./util');
 
-module.exports = DependencyGraph;
-// TODO translation
-module.exports.statuses = {
-  "REQUIRED_PLUGIN_FAILED_TO_LOAD": "Required plugin failed to load",
-  "REQUIRED_PLUGIN_NOT_FOUND": "Required plugin not found",
-  "INVALID_REQUIRED_VERSION_RANGE": "Invalid required version range",
-  "IMPORTED_SERVICE_IS_AN_IMPORT": "Imported service is itself an import",
-  "REQUIRED_SERVICE_VERSION_NOT_FOUND": "Required service version not found",
-  "REQUIRED_SERVICE_NOT_FOUND": "Required service version not found"
-}
-
 const logger = zluxUtil.loggers.bootstrapLogger
 
 /**
  * Checks if all plugin dependencies are met, including versions.
  * Sorts the plugins so that they can be installed in that order.
  */
-function DependencyGraph(initialPlugins) {
-  this.pluginsById = {};
-  for (const p of initialPlugins) {
-    this.addPlugin(p);
+export = class DependencyGraph{
+  public pluginsById: any;
+  // TODO translation
+  public static readonly statuses: any = {
+    "REQUIRED_PLUGIN_FAILED_TO_LOAD": "Required plugin failed to load",
+    "REQUIRED_PLUGIN_NOT_FOUND": "Required plugin not found",
+    "INVALID_REQUIRED_VERSION_RANGE": "Invalid required version range",
+    "IMPORTED_SERVICE_IS_AN_IMPORT": "Imported service is itself an import",
+    "REQUIRED_SERVICE_VERSION_NOT_FOUND": "Required service version not found",
+    "REQUIRED_SERVICE_NOT_FOUND": "Required service version not found"
+  };
+  constructor(initialPlugins: any) {
+    this.pluginsById = {};
+    for (const p of initialPlugins) {
+      this.addPlugin(p);
+    }
   }
-}
-
-DependencyGraph.prototype = {
-  constructor: DependencyGraph,
-  
-  pluginsById: null,
-  
-  addPlugin(plugin) {
+    
+  addPlugin(plugin: any) {
     logger.debug(`Adding plugin ${plugin.identifier}`);
     if (this.pluginsById[plugin.identifier]) {
       logger.warn(`Duplicate plugin identifier ` + plugin.identifier + ` found.`);
     }
     this.pluginsById[plugin.identifier] = plugin;
-  },
+  }
   
   /**
    * "n -> m" means "n is a dependency of m". Note that this is the direct 
@@ -60,21 +55,21 @@ DependencyGraph.prototype = {
    * exists, but n might either exist or just be m's dream.
    */
   _buildGraph() {
-    const g = {};
+    const g: any = {};
     const brokenDeps = [];
     for (const plugin of Object.values(this.pluginsById)) {
       logger.debug("processing plugin ", plugin, "\n")
-      const importerId = plugin.identifier;
+      const importerId = (plugin as any).identifier;
       if (!g[importerId]) {
         g[importerId] = { 
             pluginId: importerId,
             deps: []
         };
       }
-      if (!plugin.dataServices) {
+      if (!(plugin as any).dataServices) {
         continue;
       }
-      for (const service of plugin.dataServices) {
+      for (const service of (plugin as any).dataServices) {
         if (service.type == 'import') {
           const serviceImport = service;
           const providerId = serviceImport.sourcePlugin;
@@ -85,7 +80,7 @@ DependencyGraph.prototype = {
               deps: []
             };
           }
-          const depLink = {
+          const depLink: any = {
             provider: providerId,
             service: serviceImport.sourceName,
             importer: importerId,
@@ -108,7 +103,7 @@ DependencyGraph.prototype = {
       graph: g,
       brokenDeps
     }
-  },
+  }
   
   /**
    * Separates all invalid imports into a separate object.
@@ -119,14 +114,14 @@ DependencyGraph.prototype = {
    * wish that cannot be fulfilled, but also everyone who depends on m cannot be
    * properly instantiated.
    */
-  _removeBrokenPlugins(graphWithBrokenDeps) {
+  _removeBrokenPlugins(graphWithBrokenDeps: any) {
     logger.debug('graph: ', graphWithBrokenDeps)
-    const rejects = {};
+    const rejects: any = {};
     const graph = graphWithBrokenDeps.graph;
     for (let brokenDep of graphWithBrokenDeps.brokenDeps) {
       visit(graph[brokenDep.importer], brokenDep.validationError);
     }
-    function visit(pluginNode, validationError) {
+    function visit(pluginNode: any, validationError: any) {
       logger.debug('visiting broken node ', pluginNode)
       if (pluginNode.visited) {
         return;
@@ -160,10 +155,10 @@ DependencyGraph.prototype = {
       pluginNode.visited = true;
     }
     for (const reject of Object.keys(rejects)) {
-      delete graphWithBrokenDeps.graph[reject.pluginId];
+      delete graphWithBrokenDeps.graph[(reject as any).pluginId];
     }
     return rejects;
-  },
+  }
   
   /**
    * Produces a topologically sorted array of plugins. 
@@ -173,16 +168,16 @@ DependencyGraph.prototype = {
    * importers will of course be correctly rejected)
    * 
    */
-  _toposort(graph) {
+  _toposort(graph: any) {
     logger.debug('graph: ', graph)
-    const pluginsSorted = [];
+    const pluginsSorted: any = [];
     let time = 0;
     for (let importedPlugin of Object.values(graph)) {
-      visit(importedPlugin, true);
+      visit(importedPlugin);
     }
     return pluginsSorted;
     
-    function visit(pluginNode) {
+    function visit(pluginNode: any) {
       logger.debug('visiting node ', pluginNode)
       if (pluginNode.visited) {
         return;
@@ -211,17 +206,17 @@ DependencyGraph.prototype = {
       //   || (pluginNode.finishingTime > pluginsSorted[0].finishingTime));
       pluginsSorted.unshift(pluginNode);
     } 
-  },
+  }
   
   processImports() {
     const graphWithBrokenDeps = this._buildGraph();
     const rejects = this._removeBrokenPlugins(graphWithBrokenDeps);
     const pluginsSorted = this._toposort(graphWithBrokenDeps.graph);
     const pluginsSortedAndFiltered = [];
-    const nonRejectedPlugins = {};
+    const nonRejectedPlugins: any = {};
     for (const plugin of Object.values(this.pluginsById)) {
-      if (!rejects[plugin.identifier]) {
-        nonRejectedPlugins[plugin.identifier] = plugin;
+      if (!rejects[(plugin as any).identifier]) {
+        nonRejectedPlugins[(plugin as any).identifier] = plugin;
       }
     }
     for (const node of pluginsSorted) {
@@ -244,7 +239,7 @@ DependencyGraph.prototype = {
  * Checks if the provider plugin (1) exists (2) contains a service that could
  * satisfy the import
  */
-function validateDep(dep, providerPlugin) {
+function validateDep(dep: any, providerPlugin: any) {
   let valid = false;
   let validationError;
   
@@ -306,6 +301,7 @@ function validateDep(dep, providerPlugin) {
   dep.validationError = validationError;
   logger.debug('dep.valid: ', dep.valid)
 }
+
 
 /*
   This program and the accompanying materials are

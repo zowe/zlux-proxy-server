@@ -15,10 +15,11 @@
   ],
   "main": "lib/index.js",
   "scripts": {
-    "build": "exit 0",
+    "build": "tsc",
     "test": "mocha --recursive --exit test"
   },
   "dependencies": {
+    "@types/bluebird": "^3.5.26",
     "accept-language-parser": "~1.5.0",
     "bluebird": "~3.5.1",
     "body-parser": "~1.18.3",
@@ -36,6 +37,10 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "chai-http": "^4.2.0"
+    "chai-http": "^4.2.0",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.4.3",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1"
   }
 }

@@ -11,44 +11,42 @@
 
 'use strict';
 
-if (!global.COM_RS_COMMON_LOGGER) {
+if (!(global as any).COM_RS_COMMON_LOGGER) {
   const loggerFile = require('../../zlux-shared/src/logging/logger.js');
-  global.COM_RS_COMMON_LOGGER = new loggerFile.Logger();
-  global.COM_RS_COMMON_LOGGER.addDestination(global.COM_RS_COMMON_LOGGER.makeDefaultDestination(true,true,true));
+  (global as any).COM_RS_COMMON_LOGGER = new loggerFile.Logger();
+  (global as any).COM_RS_COMMON_LOGGER.addDestination((global as any).COM_RS_COMMON_LOGGER.makeDefaultDestination(true,true,true));
 }
 
 const path = require('path');
 const fs = require('fs');
-const Promise = require('bluebird');
+const BBPromise = require('bluebird');
 const ipaddr = require('ipaddr.js');
 const dns = require('dns');
-const dnsLookup = Promise.promisify(dns.lookup);
+const dnsLookup = BBPromise.promisify(dns.lookup);
 
-function compoundPathFragments(left, right) {
+function compoundPathFragments(left: any, right: any) {
   return path.join(left, right).normalize();
 }
 
-module.exports.resolveRelativePathAgainstCWD = function resolveRelativePathAgainstCWD(path, x) {
+export function resolveRelativePathAgainstCWD(path: any, x: any) {
   return compoundPathFragments(process.cwd(), path);
 }
 
-const loggers = {
-  bootstrapLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.bootstrap"),
-  authLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.auth"),
-  contentLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.static"),
-  childLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.child"),
-  utilLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.utils"),
-  proxyLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.proxy"),
-  installLogger: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.install"),
-  apiml: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.apiml"),
-  routing: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.routing"),
-  network: global.COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.network"),
+export const loggers = {
+  bootstrapLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.bootstrap"),
+  authLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.auth"),
+  contentLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.static"),
+  childLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.child"),
+  utilLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.utils"),
+  proxyLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.proxy"),
+  installLogger: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.install"),
+  apiml: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.apiml"),
+  routing: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.routing"),
+  network: (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger("_zsf.network"),
 };
 
-module.exports.loggers = loggers;
 
-module.exports.resolveRelativePaths = function resolveRelativePaths(root, resolver, 
-    callerKey) {
+export function resolveRelativePaths(root: any, resolver: any, callerKey: any) {
   for (const key of Object.keys(root)) {
     const value = root[key];
     const valueType = typeof value;
@@ -62,17 +60,17 @@ module.exports.resolveRelativePaths = function resolveRelativePaths(root, resolv
   }
 };
 
-module.exports.makeOptionsObject = function (defaultOptions, optionsIn) {
+export function makeOptionsObject(defaultOptions: any, optionsIn: any) {
   const o = Object.create(defaultOptions);
   Object.assign(o, optionsIn);
   return Object.seal(o);
 };
 
-module.exports.clone = function(obj) {
+export function clone(obj: any) {
   return JSON.parse(JSON.stringify(obj));
 };
 
-module.exports.deepFreeze = function deepFreeze(obj, seen) {
+export function deepFreeze(obj: any, seen: any) {
   if (!seen) {
     seen = new Map();
   }
@@ -90,7 +88,7 @@ module.exports.deepFreeze = function deepFreeze(obj, seen) {
   return Object.freeze(obj);
 };
 
-module.exports.readOnlyProxy = function readOnlyProxy(obj) {
+export function readOnlyProxy(obj: any) {
   return new Proxy(obj, {
     get: function(target, property) {
       return target[property];
@@ -98,7 +96,7 @@ module.exports.readOnlyProxy = function readOnlyProxy(obj) {
   });  
 };
 
-module.exports.getOrInit = function(obj, key, dflt) {
+export function getOrInit(obj: any, key: any, dflt: any) {
   let value = obj[key];
   if (!value) {
     value = obj[key] = dflt;
@@ -106,9 +104,9 @@ module.exports.getOrInit = function(obj, key, dflt) {
   return value;
 };
 
-module.exports.readFilesToArray = function(fileList) {
-  var contentArray = [];
-  fileList.forEach(function(filePath) {
+export function readFilesToArray(fileList: any) {
+  var contentArray: any[] = [];
+  fileList.forEach(function(filePath: string) {
     try {
       contentArray.push(fs.readFileSync(filePath));
     } catch (e) {
@@ -132,8 +130,8 @@ const errorProto = {
     "messageDetails": "An error occurred when processing the request"
   };
 
-module.exports.makeErrorObject = function makeError(details) {
-  if ((details._objectType !== undefined) 
+  function makeError(details: any) {
+    if ((details._objectType !== undefined) 
       || (details._metaDataVersion !== undefined)) {
     throw new Error("can't specify error metadata");
   }
@@ -143,7 +141,9 @@ module.exports.makeErrorObject = function makeError(details) {
   return err;
 }
 
-module.exports.concatIterables = function* concatIterables() {
+export {makeError as makeErrorObject};
+
+export function* concatIterables() {
   for (let i=0; i < arguments.length; i++) {
     yield *arguments[i];
   }
@@ -155,12 +155,12 @@ module.exports.concatIterables = function* concatIterables() {
  * 
  * `listenerFun` should return a promise
  */
-module.exports.asyncEventListener = function(listenerFun, logger) {
+export function asyncEventListener(listenerFun: any, logger: any) {
   //the handler for the most recent event: when this is resolved,
   //another event can be handled
   let promise = Promise.resolve();
   
-  return function(event) {
+  return function(event: any) {
     promise = promise.then(() => {
       return listenerFun(event);
     }, err => {
@@ -171,7 +171,7 @@ module.exports.asyncEventListener = function(listenerFun, logger) {
   }
 }
 
-module.exports.uniqueIps = Promise.coroutine(function *uniqueIps(hostnames) {
+module.exports.uniqueIps = BBPromise.coroutine(function *uniqueIps(hostnames: any) {
   if (hostnames == null) {
     loggers.network.debug("uniqueIps: no addresses specified, returning 0.0.0.0");
     return [ '0.0.0.0' ];
@@ -194,7 +194,7 @@ module.exports.uniqueIps = Promise.coroutine(function *uniqueIps(hostnames) {
   return arr;
 })
 
-module.exports.getLoopbackAddress = function getLoopbackAddress(listenerAddresses) {
+export function getLoopbackAddress(listenerAddresses: any) {
   if (listenerAddresses == null || listenerAddresses.length === 0) {
     loggers.network.debug("getLoopbackAddress: no addresses specified, "
         + "loopback address is 127.0.0.1");
@@ -222,7 +222,7 @@ module.exports.getLoopbackAddress = function getLoopbackAddress(listenerAddresse
   return listenerAddresses[0];
 }
 
-module.exports.formatErrorStatus = function formatErrorStatus(err, descriptions) {
+module.exports.formatErrorStatus = function formatErrorStatus(err: any, descriptions: any) {
   const description = (descriptions[err.status] || err.status) + ": ";
   const keywords = [];
   

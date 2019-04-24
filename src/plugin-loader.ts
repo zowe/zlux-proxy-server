@@ -1,3 +1,4 @@
+import { AnyRecordWithTtl } from "dns";
 
 /*
   This program and the accompanying materials are
@@ -39,7 +40,7 @@ const makeSwaggerCatalog = require('./swagger-catalog');
  */
 const bootstrapLogger = zluxUtil.loggers.bootstrapLogger;
 
-const defaultOptions = {
+const defaultOptions: any = {
   productCode: null,
   authManager: null,
   pluginsDir: null,
@@ -47,15 +48,20 @@ const defaultOptions = {
   relativePathResolver: zluxUtil.resolveRelativePathAgainstCWD
 }
 
-function Service(def, configuration, plugin) {
-  this.configuration = configuration;
-  //don't do this here: avoid circular structures:
-  //this.plugin = plugin; 
-  Object.assign(this, def);
-}
-Service.prototype = {
-  constructor: Service,
-  
+export class Service{
+  public configuration: any;
+  public version: any;
+  public name: string;
+  public versionRequirements: any;
+  public localName: string;
+
+  constructor(def: any, configuration: any, plugin: any) {
+    this.configuration = configuration;
+    //don't do this here: avoid circular structures:
+    //this.plugin = plugin; 
+    Object.assign(this, def);
+  }
+
   validate() {
     if (!semver.valid(this.version)) {
       throw new Error(`${this.name}: invalid version "${this.version}"`)
@@ -71,13 +77,14 @@ Service.prototype = {
   }
 }
 
-function Import(def, configuration, plugin) {
-  Service.call(this, def, configuration, plugin);
-}
-Import.prototype = {
-  constructor: Import,
-  __proto__:  Service.prototype,
-  
+class Import extends Service{
+  public versionRange: any;
+  public localName: any;
+
+  constructor(def: any, configuration: any, plugin: any){
+    super(def, configuration, plugin);
+  }
+
   validate() {
     if (!semver.validRange(this.versionRange)) {
       throw new Error(`${this.localName}: invalid version range "${this.versionRange}"`)
@@ -85,14 +92,17 @@ Import.prototype = {
   }
 }
 
-function NodeService(def, configuration, plugin) {
-  Service.call(this, def, configuration, plugin);
-}
-NodeService.prototype = {
-  constructor: NodeService,
-  __proto__:  Service.prototype,
+class NodeService extends Service{
+  public nodeModule: any;
+  public source: any;
+  public filename: any;
+  public fileName: any;
+
+  constructor(def: any, configuration: any, plugin: any) {
+    super(def, configuration, plugin);
+  }
   
-  loadImplementation(dynamicallyCreated, location) {
+  loadImplementation(dynamicallyCreated: any, location: any) {
     if (dynamicallyCreated) {
       const nodeModule = requireFromString(this.source);
       this.nodeModule = nodeModule;
@@ -114,30 +124,31 @@ NodeService.prototype = {
 
 //first checks if the parent plugin has a host and port 
 //and if not, looks them up in the config
-function ExternalService(def, configuration, plugin) {
-  Service.call(this, def, configuration, plugin);
-  if (!this.host) {
-    this.host = plugin.host;
-  }
-  if (!this.port) {
-    this.port = plugin.port;
-  }
-  const remoteConfig = configuration.getContents(["remote.json"]);
-  if (remoteConfig) {
+class ExternalService extends Service{
+  public host: any;
+  public port: any;
+
+  constructor(def: any, configuration: any, plugin: any) {
+    super(def, configuration, plugin);
     if (!this.host) {
-      this.host = remoteConfig.host;
+      this.host = plugin.host;
     }
     if (!this.port) {
-      this.port = remoteConfig.port;
+      this.port = plugin.port;
+    }
+    const remoteConfig = configuration.getContents(["remote.json"]);
+    if (remoteConfig) {
+      if (!this.host) {
+        this.host = remoteConfig.host;
+      }
+      if (!this.port) {
+        this.port = remoteConfig.port;
+      }
     }
   }
 }
-ExternalService.prototype = {
-  constructor: ExternalService,
-  __proto__:  Service.prototype
-}
 
-function makeDataService(def, plugin, context) {
+function makeDataService(def: any, plugin: any, context: any) {
   const configuration = configService.getServiceConfiguration(plugin.identifier,
       def.name, context.config, context.productCode);
   let dataservice;
@@ -155,33 +166,36 @@ function makeDataService(def, plugin, context) {
   return dataservice;
 }
 
-function Plugin(def, configuration) {
-  Object.assign(this, def);
-  this.configuration = configuration;
-  if (!this.location) {
-    this.location = process.cwd();
+export class Plugin{
+  public configuration: any;
+  public location: any;
+  public translationMaps: any;
+  public identifier: any;
+  public pluginVersion: any;
+  public apiVersion: any;
+  public pluginType: any;
+  public copyright: any;
+  public webContent: any;
+  public configurationData: any;
+  public dataServices: any;
+  public dataServicesGrouped: any;
+  public importsGrouped: any;
+  public dynamicallyCreated: any;
+
+  constructor(def: any, configuration: any) {
+    Object.assign(this, def);
+    this.configuration = configuration;
+    if (!this.location) {
+      this.location = process.cwd();
+    }
+    this.translationMaps = {};
   }
-  this.translationMaps = {};
-}
-Plugin.prototype = {
-  constructor: Plugin,
-  identifier: null,
-  apiVersion: null,
-  pluginVersion: null,
-  pluginType: null,
-  webContent: null,
-  copyright:null,
-  location: null,
-  dataServices: null,
-  dataServicesGrouped: null,
-  configuration: null,
-  //...
   
   toString() {
     return `[Plugin ${this.identifier}]`
-  },
+  }
   
-  isValid() {
+  isValid(context?: any) {
     //TODO detailed diagnostics
     return this.identifier && (typeof this.identifier === "string")
       && this.pluginVersion && (typeof this.pluginVersion === "string")
@@ -190,13 +204,13 @@ Plugin.prototype = {
       //leave it here and make everyone tidy up their plugin defs:
       && this.pluginType && (typeof this.pluginType === "string")
       ;
-  },
+  }
   
-  init(context) {
+  init(context?: any) {
     //Nothing here anymore: startup checks for validity will be superceeded by 
     //https://github.com/zowe/zlux-server-framework/pull/18 and initialization 
     //concept has not manifested for many plugin types, so a warning is not needed.
-  },
+  }
   
   exportDef() {
     return {
@@ -210,21 +224,21 @@ Plugin.prototype = {
       configurationData: this.configurationData,
       dataServices: this.dataServices
     };
-  },
+  }
 
-  exportTranslatedDef(acceptLanguage) {
+  exportTranslatedDef(acceptLanguage: any) {
     const def = this.exportDef();
     if (typeof this.webContent === 'object') {
       return translationUtils.translate(def, this.translationMaps, acceptLanguage);
     }
     return def;
-  },
+  }
 
   loadTranslations() {
     if (typeof this.webContent === 'object') {
       this.translationMaps = translationUtils.loadTranslations(this.location);
     }
-  },
+  }
   
   verifyStaticWebContent() {
     if (this.webContent) {
@@ -237,10 +251,10 @@ Plugin.prototype = {
             + `will serve static files from ${contentPath}`);
       }
     }
-  },
+  }
   
-  initDataServices(context) {
-    function addService(service, name, container) {
+  initDataServices(context: any) {
+    function addService(service: any, name: string, container: any) {
       let group = container[name];
       if (!group) {
         group = container[name] = {
@@ -263,7 +277,7 @@ Plugin.prototype = {
     this.importsGrouped = {};
     const filteredDataServices = [];
     for (const dataServiceDef of this.dataServices) {
-      const dataservice = makeDataService(dataServiceDef, this, context);
+      const dataservice: any = makeDataService(dataServiceDef, this, context);
       if (dataservice.type == "service") {          
         addService(dataservice, dataservice.name, this.dataServicesGrouped);
         bootstrapLogger.info(`${this.identifier}: `
@@ -308,7 +322,7 @@ Plugin.prototype = {
     }
     this.dataServices = filteredDataServices;
     this._validateLocalVersionRequirements()
-  },
+  }
   
   _validateLocalVersionRequirements() {
     for (let service of this.dataServices) {
@@ -343,26 +357,25 @@ Plugin.prototype = {
         }
       }
     }
-  },
+  }
   
-  getApiCatalog(productCode) {
-    return makeSwaggerCatalog(this, productCode)
+  getApiCatalog(productCode: any) {
+    return makeSwaggerCatalog.makeCatalogForPlugin(this, productCode)
   }
   
 };
 
-function LibraryPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-LibraryPlugIn.prototype = {
-  __proto__: Plugin.prototype,
-  constructor: LibraryPlugIn,
+
+class LibraryPlugIn extends Plugin{
+  constructor(def: any, configuration: any) {
+    super(def, configuration);
+  }
   
-  init(context) {
+  init(context?: any) {
     assert(this.pluginType === "library");
     if (!fs.existsSync(this.location)) {
       bootstrapLogger.log(bootstrapLogger.WARNING,
-        `${def.identifier}: library path ${this.location} does not exist`);
+        `${this.identifier}: library path ${this.location} does not exist`);
       return;
     }
     bootstrapLogger.log(bootstrapLogger.INFO,
@@ -370,48 +383,40 @@ LibraryPlugIn.prototype = {
   }
 };
 
-function ApplicationPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-ApplicationPlugIn.prototype = {
-  __proto__: Plugin.prototype,
-  constructor: ApplicationPlugIn,
+class ApplicationPlugIn extends Plugin {
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+  }
 };
 
-function WindowManagerPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-WindowManagerPlugIn.prototype = {
-  constructor: WindowManagerPlugIn,
-  __proto__: Plugin.prototype,
+class WindowManagerPlugIn extends Plugin{
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+  }
 };
 
-function BootstrapPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-BootstrapPlugIn.prototype = {
-  constructor: BootstrapPlugIn,
-  __proto__: Plugin.prototype,
+class BootstrapPlugIn extends Plugin{
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+  }
 };
 
-function DesktopPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-DesktopPlugIn.prototype = {
-  constructor: DesktopPlugIn,
-  __proto__: Plugin.prototype,
+class DesktopPlugIn extends Plugin{
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+  }
 };
 
-function NodeAuthenticationPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-}
-NodeAuthenticationPlugIn.prototype = {
-  constructor: NodeAuthenticationPlugIn,
-  __proto__: Plugin.prototype,
-  authenticationCategory: null,
-  filename: null,
+class NodeAuthenticationPlugIn extends Plugin{
+  public authenticationCategory: any;
+  public filename: any;
+  public authenticationModule: any;
+
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+  }
   
-  isValid(context) {
+  isValid(context: any) {
     if (!(super.isValid(context) && this.filename 
         && this.authenticationCategory)) {
       return false;
@@ -426,16 +431,16 @@ NodeAuthenticationPlugIn.prototype = {
       return false;
     }
     return true;
-  },
+  }
   
   exportDef() {
     return Object.assign(super.exportDef(), {
       filename: this.filename,
       authenticationCategory: this.authenticationCategory
     });
-  },
+  }
   
-  init(context) {
+  init(context: any) {
     let filepath = path.join(this.location, 'lib', this.filename);
     // Make the relative path clear. process.cwd() is zlux-app-server/bin/
     if (!path.isAbsolute(filepath)) {
@@ -448,23 +453,24 @@ NodeAuthenticationPlugIn.prototype = {
   }
 };
 
-function ProxyConnectorPlugIn(def, configuration) {
-  Plugin.call(this, def, configuration);
-  const remoteConfig = configuration.getContents(["remote.json"]);
-  if (remoteConfig) {
-    if (!this.host) {
-      this.host = remoteConfig.host;
-    }
-    if (!this.port) {
-      this.host = remoteConfig.port;
+class ProxyConnectorPlugIn extends Plugin{
+  public host: any;
+  public port: any;
+  
+  constructor(def: any, configuration: any) {
+    super(def, configuration)
+    const remoteConfig = configuration.getContents(["remote.json"]);
+    if (remoteConfig) {
+      if (!this.host) {
+        this.host = remoteConfig.host;
+      }
+      if (!this.port) {
+        this.host = remoteConfig.port;
+      }
     }
   }
-}
-ProxyConnectorPlugIn.prototype = {
-  constructor: ProxyConnectorPlugIn,
-  __proto__: Plugin.prototype,
   
-  isValid(context) {
+  isValid(context: any) {
     if (!(super.isValid(context) && this.host && this.port)) {
       return false;
     }
@@ -478,7 +484,7 @@ ProxyConnectorPlugIn.prototype = {
 //      return false;
 //    }
     return true;
-  },
+  }
 };
 
 const plugInConstructorsByType = {
@@ -491,8 +497,8 @@ const plugInConstructorsByType = {
   "proxyConnector": ProxyConnectorPlugIn
 };
 
-function makePlugin(def, pluginConfiguration, pluginContext, dynamicallyCreated) {
-  const pluginConstr = plugInConstructorsByType[def.pluginType];
+function makePlugin(def: any, pluginConfiguration: any, pluginContext: any, dynamicallyCreated: any = false) {
+  const pluginConstr = (plugInConstructorsByType as any)[def.pluginType];
   if (!pluginConstr) {
     throw new Error(`${def.identifier}: pluginType ${def.pluginType} is unknown`); 
   }
@@ -516,20 +522,15 @@ function makePlugin(def, pluginConfiguration, pluginContext, dynamicallyCreated)
   return self;
 };
 
-function PluginLoader(options) {
-  EventEmitter.call(this);
-  this.options = zluxUtil.makeOptionsObject(defaultOptions, options);
-  this.plugins = [];
-  this.pluginMap = {};
-};
-PluginLoader.prototype = {
-  constructor: PluginLoader,
-  __proto__: EventEmitter.prototype,
-  options: null,
-  plugins: null,
-  pluginMap: null,
+class PluginLoader extends EventEmitter{
+  constructor(options: any) {
+    super()
+    this.options = zluxUtil.makeOptionsObject(defaultOptions, options);
+    this.plugins = [];
+    this.pluginMap = {};
+  }
 
-  _readPluginDef(pluginDescriptorFilename) {
+  _readPluginDef(pluginDescriptorFilename: string) {
     const pluginPtrPath = path.join(this.options.pluginsDir, 
         pluginDescriptorFilename);
     bootstrapLogger.info(`Processing plugin reference ${pluginPtrPath}...`);
@@ -566,14 +567,14 @@ PluginLoader.prototype = {
         + `type = ${pluginDef.pluginType}`);
     pluginDef.location = pluginBasePath;
     return pluginDef;
-  },
+  }
   
   readPluginDefs() {
     const defs = [];
     bootstrapLogger.log(bootstrapLogger.INFO,
       `Reading plugins dir ${this.options.pluginsDir}`);
     const pluginLocationJSONs = fs.readdirSync(this.options.pluginsDir)
-      .filter(function(value){
+      .filter(function(value: any){
         return value.match(/.*\.json/);
       });
     bootstrapLogger.log(bootstrapLogger.FINER, util.inspect(pluginLocationJSONs));
@@ -583,20 +584,19 @@ PluginLoader.prototype = {
         defs.push(plugin);
       } catch (e) {
         console.log(e);
-        bootstrapLogger.warn(e)
         bootstrapLogger.log(bootstrapLogger.INFO,
           `Failed to load ${pluginDescriptorFilename}\n`);
       }
     } 
     return defs;
-  },
+  }
   
   loadPlugins() {
     const defs = this.readPluginDefs();
     this.installPlugins(defs);
-  },
+  }
   
-  installPlugins(pluginDefs) {
+  installPlugins(pluginDefs: any) {
     const pluginContext = {
       productCode: this.options.productCode,
       config: this.options.serverConfig,
@@ -630,7 +630,6 @@ PluginLoader.prototype = {
         successCount++;
       } catch (e) {
         console.log(e);
-        //bootstrapLogger.warn(e)
         bootstrapLogger.log(bootstrapLogger.INFO,
           `Failed to load ${pluginDef.identifier}: ${e}`);
       }
@@ -640,9 +639,9 @@ PluginLoader.prototype = {
         data: plugin
       });
     }
-  },
+  }
   
-  addDynamicPlugin(pluginDef) {
+  addDynamicPlugin(pluginDef: any) {
     if (this.pluginMap[pluginDef.identifier]) {
       throw new Error('plugin already registered');
     }
@@ -659,7 +658,7 @@ PluginLoader.prototype = {
     const pluginConfiguration = configService.getPluginConfiguration(
       pluginDef.identifier, this.options.serverConfig,
       this.options.productCode);
-    const plugin = makePlugin(pluginDef, pluginConfiguration, null, pluginContext,
+    const plugin = makePlugin(pluginDef, pluginConfiguration, pluginContext,
         true);
 //    if (!this.unresolvedImports.allImportsResolved(pluginContext.plugins)) {
 //      throw new Error('unresolved dependencies');
@@ -674,6 +673,7 @@ PluginLoader.prototype = {
   }
 };
 
+export{};
 module.exports = PluginLoader;
 PluginLoader.makePlugin = makePlugin;
 

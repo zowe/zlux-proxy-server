@@ -7,3 +7,4 @@
 # Copyright Contributors to the Zowe Project.
 
 /node_modules
+/lib

@@ -29,7 +29,7 @@ const utilLog = zluxUtil.loggers.utilLogger;
 /    ...
 /  }
 */
-function loadTranslations(pluginLocation) {
+export function loadTranslations(pluginLocation: string) {
   const translationMaps = {};
   const relativePath = 'web/assets/i18n';
   const filePrefix = 'pluginDefinition.i18n.';
@@ -59,7 +59,7 @@ function loadTranslations(pluginLocation) {
 }
 
 // translate translates Plugin Definition choosing most suitable translation map
-function translate(pluginDef, translationMaps, acceptLanguage) {
+export function translate(pluginDef: any, translationMaps: any, acceptLanguage: any) {
   const availableTranslations = getAvailableTranslations(translationMaps);
   const langCountry = acceptLanguageParser.pick(
     availableTranslations,
@@ -77,7 +77,7 @@ function translate(pluginDef, translationMaps, acceptLanguage) {
 
 // getAcceptLanguageFromCookies builds acceptLanguage string
 // based on user preferences stored in cookies
-function getAcceptLanguageFromCookies(cookies) {
+export function getAcceptLanguageFromCookies(cookies: any) {
   const prefix = 'org.zowe.zlux.zlux-app-manager.preferences';
   const languageKey = `${prefix}.language`;
   // ex.: 'es-ES' or 'es'
@@ -92,15 +92,15 @@ function getAcceptLanguageFromCookies(cookies) {
   return language;
 }
 
-function getBaseLanguage(language) {
+function getBaseLanguage(language: string) {
   return language.split('-')[0];
 }
 
-function getAvailableTranslations(translationMaps) {
+function getAvailableTranslations(translationMaps: any) {
   return Object.keys(translationMaps);
 }
 
-function translateObject(object, translationMap) {
+function translateObject(object: any, translationMap: any) {
   for (const key in object) {
     if (key.endsWith('Key') && typeof object[key] === 'string') {
       const keyToTranslate = key.substr(0, key.length - 3) + 'Default';
@@ -119,12 +119,6 @@ function translateObject(object, translationMap) {
     }
   }
 }
-
-module.exports = {
-  getAcceptLanguageFromCookies,
-  loadTranslations,
-  translate
-};
 
 const _unitTest = false;
 function unitTest() {

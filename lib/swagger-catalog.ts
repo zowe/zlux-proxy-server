@@ -11,7 +11,7 @@
 
 
 const express = require('express');
-const Promise = require('bluebird');
+const BBPromise = require('bluebird');
 const zLuxUrl = require('./url')
 const path = require('path');
 const fs = require('fs');
@@ -22,7 +22,7 @@ const zluxUtil = require('./util');
 
 var installLog = zluxUtil.loggers.installLogger;
 
-function getServiceSummary(service) {
+function getServiceSummary(service: any) {
   switch (service.type) {
   case "router":
   case "nodeService":
@@ -37,7 +37,7 @@ function getServiceSummary(service) {
   }
 }
 
-function makeCatalogForPlugin(plugin, productCode, nodeContext) {
+export function makeCatalogForPlugin(plugin: any, productCode: any, nodeContext: any) {
   return new Promise((resolve) => {
     const openApi = {
       swagger: "2.0",
@@ -88,8 +88,8 @@ function makeCatalogForPlugin(plugin, productCode, nodeContext) {
   })
 }
 
-var getSwaggerDocs = Promise.coroutine(function* (plugin, productCode, nodeContext) {
-  var allServiceDocs = [];
+var getSwaggerDocs = BBPromise.coroutine(function* (plugin: any, productCode: any, nodeContext: any) {
+  var allServiceDocs: any = [];
   if (plugin.dataServices){
     for (let i = 0; i < plugin.dataServices.length; i++) {
       let service = plugin.dataServices[i];
@@ -127,7 +127,7 @@ var getSwaggerDocs = Promise.coroutine(function* (plugin, productCode, nodeConte
   return allServiceDocs;
 })
 
-function readSingleSwaggerFile (dirName, serviceName, serviceVersion) {
+function readSingleSwaggerFile (dirName: string, serviceName: string, serviceVersion: any) {
   // read one swagger file and validate the json that is returned
   return new Promise ((resolve, reject) => {
     const jsonName = serviceName+'.json';
@@ -177,7 +177,7 @@ function readSingleSwaggerFile (dirName, serviceName, serviceVersion) {
   });
 }
 
-function overwriteSwaggerFieldsForServer (swaggerJson, urlBase, nodeContext) {
+function overwriteSwaggerFieldsForServer (swaggerJson: any, urlBase: string, nodeContext: any) {
   // overwrite swagger fields with more accurate info from server and config
   swaggerJson.basePath = urlBase + "/services" + swaggerJson.basePath + "/" + swaggerJson.info.version;
   swaggerJson.schemes = getSchemesFromContext(nodeContext);
@@ -185,7 +185,7 @@ function overwriteSwaggerFieldsForServer (swaggerJson, urlBase, nodeContext) {
   return swaggerJson;
 }
 
-function getSchemesFromContext (nodeContext) {
+function getSchemesFromContext (nodeContext: any) {
   let schemes = [];
   if (nodeContext.http) {
     schemes.push("http");
@@ -196,7 +196,7 @@ function getSchemesFromContext (nodeContext) {
   return schemes;
 }
 
-function getHost(nodeContext) {
+function getHost(nodeContext: any) {
   return nodeContext.https ? `${os.hostname()}:${nodeContext.https.port}`
                            : `${os.hostname()}:${nodeContext.http.port}`;
 }

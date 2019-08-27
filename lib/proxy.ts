@@ -22,11 +22,12 @@ const util = require('./util');
 const unpconst = require('./unp-constants');
 const WebSocket = require('ws');
 const net = require('net');
+const url = require('url');
 
 const proxyLog = util.loggers.proxyLogger;
 
-function convertOptions(request, realHost, realPort, urlPrefix) {
-  var options = {};
+export function convertOptions(request: any, realHost: any, realPort: any, urlPrefix: string) {
+  var options: any = {};
   proxyLog.debug("request host " + request.headers.host);
   var headers = request.headers;
   var newHeaders = {};
@@ -54,7 +55,7 @@ function convertOptions(request, realHost, realPort, urlPrefix) {
   return options;
 }
 
-function makeSimpleProxy(host, port, options, pluginID, serviceName) {
+export function makeSimpleProxy(host: string, port: number, options: any, pluginID: number, serviceName: string) {
   if (!(host && port)) {
     throw new Error(`Proxy (${pluginID}:${serviceName}) setup failed.\n`
                     + `Host & Port for proxy destination are required but were missing.\n`
@@ -64,7 +65,7 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
   const {urlPrefix, isHttps, addProxyAuthorizations, allowInvalidTLSProxy} = 
     options;
   const httpApi = isHttps? https : http;
-  return function(req1, res1) {
+  return function(req1: any, res1: any) {
     proxyLog.debug("Request: " + req1.protocol + '://' + req1.get('host') + req1.url);
     const requestOptions = convertOptions(req1, host, port, urlPrefix);
     if (isHttps) {
@@ -128,7 +129,7 @@ function makeSimpleProxy(host, port, options, pluginID, serviceName) {
   }
 }
 
-function makeWsProxy(host, port, urlPrefix, isHttps) {
+export function makeWsProxy(host: string, port: number, urlPrefix: string, isHttps?: boolean) {
   // copied and pasted with only minimal fixes to formatting
   var toString = function() {
     return '[Proxy URL: '+urlPrefix+']';
@@ -154,7 +155,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
       logException(closeEx);
     }
   };
-  return function(ws, req) {
+  return function(ws: any, req: any) {
     proxyLog.debug(toString()+" WS proxy request to: " + req.originalUrl);
     if (req.originalUrl.indexOf('?') !== -1) {
       const parts = req.originalUrl.split('?');
@@ -299,7 +300,7 @@ function makeWsProxy(host, port, urlPrefix, isHttps) {
   };
 };
 
-function checkProxiedHost(host, port) {
+export function checkProxiedHost(host: string, port: number) {
   const client = new net.Socket();
   return new Promise((resolve, reject) => {
     client.connect(port, host, () => {
@@ -319,11 +320,6 @@ function checkProxiedHost(host, port) {
     });
   });
 }
-
-exports.makeSimpleProxy = makeSimpleProxy;
-exports.makeWsProxy = makeWsProxy;
-exports.checkProxiedHost = checkProxiedHost;
-
 
 /*
   This program and the accompanying materials are

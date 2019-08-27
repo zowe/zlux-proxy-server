@@ -36,42 +36,64 @@ const lowCPU = process.env.lowCPU || 0.2;
 
 const minWorkers = process.env.minWorkers || 1;
 const maxWorkers = process.env.maxWorkers || cpuCount;
-const workerChangeDecisionDelay = process.env.workerChangeDecisionDelay || 4;
+const workerChangeDecisionDelay: any = process.env.workerChangeDecisionDelay || 4;
 
-var ClusterManager = function() {
-  this.isMaster = cluster.isMaster;
-  this.messageIndex = 0;
-  this.workersNum = minWorkers;
-  this.workers = [];
-  events.EventEmitter.call(this);
-}
+export class ClusterManager {
+  private isMaster: boolean;
+  public messageIndex: number;
+  public workersNum: any;
+  public workers: any[];
+  private ts: [number, number];
+  private cpuUsage: NodeJS.CpuUsage;
+  public appConfig: any;
+  public configJSON: any;
+  public startUpConfig: any;
 
-ClusterManager.prototype.__proto__ = events.EventEmitter.prototype;
-
-ClusterManager.prototype.onError = function (reason) {
-  console.log("Error: " + reason);
-}
-
-ClusterManager.prototype.getCpuUsagePercent = function() {
-  var usagePercent;
-  if (this.ts !== undefined && this.cpuUsage !== undefined) {
-    var usedTicks = process.cpuUsage(this.cpuUsage);
-    var totalTicks = process.hrtime(this.ts);
-    var totalTicksMCS = (totalTicks[0]*1000000 + totalTicks[1]/1000);//microseconds
-    usagePercent = (usedTicks.user + usedTicks.system)/totalTicksMCS;
+  constructor(){
+    this.isMaster = cluster.isMaster;
+    this.messageIndex = 0;
+    this.workersNum = minWorkers;
+    this.workers = [];
+    events.EventEmitter.call(this);
   }
-  this.ts = process.hrtime();
-  this.cpuUsage = process.cpuUsage();
-  return usagePercent;
+
+  __proto__ = events.EventEmitter.prototype;
+
+  onError(reason: string) {
+    console.log("Error: " + reason);
+  }
+
+  getCpuUsagePercent() {
+    var usagePercent;
+    if (this.ts !== undefined && this.cpuUsage !== undefined) {
+      var usedTicks = process.cpuUsage(this.cpuUsage);
+      var totalTicks = process.hrtime(this.ts);
+      var totalTicksMCS = (totalTicks[0]*1000000 + totalTicks[1]/1000);//microseconds
+      usagePercent = (usedTicks.user + usedTicks.system)/totalTicksMCS;
+    }
+    this.ts = process.hrtime();
+    this.cpuUsage = process.cpuUsage();
+    return usagePercent;
+  }
 }
 
-if (cluster.isMaster) {
-  var stoppingProcess = false;
-  process.once('SIGINT', function() {
-    stoppingProcess = true;
-  });
+// if (cluster.isMaster) {
 
-  ClusterManager.prototype.initSecret = function(errorHandler, completeHandler) {
+export class ClusterManagerMaster extends ClusterManager {
+  private stoppingProcess: boolean;
+  private secret: any;
+  private workerResourceRequests: any;
+  private nodeStates: any;
+
+  constructor() {
+    super()
+    this.stoppingProcess = false;
+    process.once('SIGINT', function() {
+      this.stoppingProcess = true;
+    });
+  }
+
+  initSecret(errorHandler: any, completeHandler: any) {
     var crypto = require('crypto');
     crypto.randomBytes(16, function(crypto_err, buffer) {
       if (crypto_err) {
@@ -83,7 +105,7 @@ if (cluster.isMaster) {
     }.bind(this));
   }
 
-  ClusterManager.prototype.initializing = function(completeHandler) {
+  initializing(completeHandler: any) {
     var inits = [];
     inits.push(this.initSecret.bind(this));
 
@@ -102,12 +124,12 @@ if (cluster.isMaster) {
     nextInit();
   }
 
-  ClusterManager.prototype.startWorker = function(wi) {
+  startWorker(wi: number) {
     console.log("Fork worker " + wi);
     var thatClusterManager = this;
     this.workers[wi] = cluster.fork({index : wi, expressSessionSecret: this.secret});
     this.workers[wi].on('exit', function(code, signal) {
-      if (stoppingProcess) {
+      if (this.stoppingProcess) {
         return;
       }
       if (wi >= thatClusterManager.workersNum) {
@@ -142,7 +164,7 @@ if (cluster.isMaster) {
     });
   }
 
-  ClusterManager.prototype.startWorkers = function() {
+  startWorkers(){
     console.log("Fork " + this.workersNum + " workers.");
     cluster.setupMaster({ silent: true });//workers[wi].process.stdout is null without this line
     for (let i = 0; i < this.workersNum; i++) {
@@ -163,7 +185,7 @@ if (cluster.isMaster) {
     }.bind(this));
   }
 
-  ClusterManager.prototype.getWorkerResourceRequestsQueue = function(shiftHandler) {
+  getWorkerResourceRequestsQueue(shiftHandler: any) {
     var array = new Array();
     array.push = function () {
         var requestsThreshold = this.workersNum * workerChangeDecisionDelay;
@@ -181,12 +203,12 @@ if (cluster.isMaster) {
     return array;
   }
 
-  ClusterManager.prototype.moreWorker = function() {
+  moreWorker() {
     let wi = this.workersNum++;
     this.startWorker(wi);
   }
 
-  ClusterManager.prototype.lessWorker = function() {
+  lessWorker() {
     if (this.workersNum > 1) {
       let wi = --this.workersNum;
       console.log("Close worker " + wi);
@@ -196,13 +218,13 @@ if (cluster.isMaster) {
     }
   }
   
-  var callFunction = function(f, that, argsArray, resultHandler, workerIndex) {
+  callFunction(f: any, that: any, argsArray: any[], resultHandler: any[], workerIndex: number) {
     argsArray[argsArray.length] = resultHandler;
     argsArray[argsArray.length] = workerIndex;
     f.apply(that, argsArray);
   }
 
-  ClusterManager.prototype.handleMessageFromWorker = function(message) {
+  handleMessageFromWorker(message: any) {
     if (message.type) {
       if (message.type == MessageTypes.reportCpuUsage) {
         var usagePercent = message.percent;
@@ -218,7 +240,7 @@ if (cluster.isMaster) {
         var wi = message.index;
         this.workers[wi].__workerInitialized = true;
         if (wi == 0) {
-          notifyWorker(this.workers[wi], Notifications.initOnce, null, wi);//subscriber can start separate processes with port listeners
+          this.notifyWorker(this.workers[wi], Notifications.initOnce, null, wi);//subscriber can start separate processes with port listeners
         }
         this.restoreNodeState(this.workers[wi]);
       } else if (message.type == MessageTypes.callClusterMethod) {
@@ -241,7 +263,7 @@ if (cluster.isMaster) {
     }
   }
   
-  ClusterManager.prototype.callClusterMethodLocal = function(wi, moduleName, exportedName, methodName, args, resultHandler) {
+  callClusterMethodLocal(wi: number, moduleName: string, exportedName: string, methodName: string, args: any, resultHandler: any) {
     var exported;
     var mod;
     if (moduleName) {
@@ -262,7 +284,7 @@ if (cluster.isMaster) {
       if (exported[methodName]) {
         try {
           var f = exported[methodName];
-          callFunction(f, exported, args, resultHandler, wi);
+          this.callFunction(f, exported, args, resultHandler, wi);
         } catch (e) {
           resultHandler(e);
         }
@@ -272,7 +294,7 @@ if (cluster.isMaster) {
     } else if (exported) {
       try {
         var f = exported;
-        callFunction(f, exported, args, resultHandler, wi);
+        this.callFunction(f, exported, args, resultHandler, wi);
       } catch (e) {
         resultHandler(e);
       }
@@ -281,7 +303,7 @@ if (cluster.isMaster) {
     }
   }
   
-  var notifyWorker = function(worker, notifyName, args, indexInCluster) {
+  notifyWorker(worker: any, notifyName: string, args: any, indexInCluster: number) {
     try {
       worker.send({type: MessageTypes.notify, index : indexInCluster, notifyName : notifyName, args : args});
     } catch (err) {
@@ -289,21 +311,21 @@ if (cluster.isMaster) {
     }
   }
   
-  ClusterManager.prototype.notifyWorkers = function (notifyName, args, indexInCluster) {
+  notifyWorkers(notifyName: string, args: any, indexInCluster: number) {
     this.workers.forEach(function(worker, index) {
       if (index != indexInCluster) {
-        notifyWorker(worker, notifyName, args, indexInCluster);
+        this.notifyWorker(worker, notifyName, args, indexInCluster);
       }
     });
   }
 
-  ClusterManager.prototype.notifyWorkersForAddingPlugin = function(pluginDef, resultHandler, indexInCluster) {
+  notifyWorkersForAddingPlugin(pluginDef: any, resultHandler: any, indexInCluster: number) {
     this.rememberNodeState(Notifications.addDynamicPlugin, pluginDef);
     this.notifyWorkers(Notifications.addDynamicPlugin, pluginDef, indexInCluster);
     resultHandler(true);
   }
 
-  ClusterManager.prototype.rememberNodeState = function(type, object) {
+  rememberNodeState(type: any, object: any) {
     if (!this.nodeStates) {
       this.nodeStates = new Map();
     }
@@ -315,15 +337,15 @@ if (cluster.isMaster) {
     nodeState.remember(object);
   }
 
-  ClusterManager.prototype.restoreNodeState = function(worker) {
+  restoreNodeState(worker: any) {
     if (this.nodeStates) {
-      Array.from(this.nodeStates.values()).forEach(function(nodeState) {
+      Array.from(this.nodeStates.values()).forEach(function(nodeState: any) {
         nodeState.restore(worker);
       });
     }
   }
 
-  ClusterManager.prototype.createNodeStateFor = function(type) {
+  createNodeStateFor(type: any) {
     if (Notifications.addDynamicPlugin === type) {
       return {
         pluginDefsMap: new Map(),
@@ -334,7 +356,7 @@ if (cluster.isMaster) {
         },
         restore: function(worker) {
           Array.from(this.pluginDefsMap.values()).forEach(function(pluginDef) {
-            notifyWorker(worker, Notifications.addDynamicPlugin, pluginDef, -1);
+            this.notifyWorker(worker, Notifications.addDynamicPlugin, pluginDef, -1);
           });
         }
       };
@@ -345,33 +367,55 @@ if (cluster.isMaster) {
       };
     }
   }
-} else {
+
+  start(appConfig: any, configJSON: any, startUpConfig: any) {
+    this.appConfig = appConfig;
+    this.configJSON = configJSON;
+    this.startUpConfig = startUpConfig;
+    console.log(`Master ${process.pid} is running.`);
+    this.initializing(function() {
+      this.startWorkers();
+    }.bind(this));
+  }
+
+  callClusterMethod(moduleName: string, importedName: string, methodName: string, argsArray: any[], callback: any, onerror: any = this.onError, timeout: number = 1000) {
+    return this.callClusterMethodLocal(-1, moduleName, importedName, methodName, argsArray, callback);
+  }
+
+  notifyOthers(notifyName: string, args:any, callback: any, onerror: any = this.onError) {
+    return this.notifyWorkers(notifyName, args, -1);
+  } 
+} 
+
+
+export class ClusterManagerWorker extends ClusterManager{
+
   //Worker code
   
-  var getIndexInCluster = function() {
+  getIndexInCluster = function() {
     return process.env.index;
   }
   
-  ClusterManager.prototype.getIndexInCluster = getIndexInCluster;
+  //ClusterManager.prototype.getIndexInCluster = getIndexInCluster;
   
-  ClusterManager.prototype.reportCpuUsage = function(percent) {
+  reportCpuUsage(percent) {
     process.send({type : MessageTypes.reportCpuUsage, index : this.getIndexInCluster(), percent : percent});
   }
 
-  ClusterManager.prototype.reportInitialized = function() {
+  reportInitialized() {
     process.send({type : MessageTypes.reportInitialized, index : this.getIndexInCluster()});
   }
   
-  ClusterManager.prototype.handleMessageFromMaster = function(message) {
+  handleMessageFromMaster(message: any) {
     if (message.type) {
       if (message.type == MessageTypes.notify) {
         //console.log("Notification from " + message.index + ": " + message.notifyName);
-        this.emit(message.notifyName, message.index, message.args);
+        (this as any).emit(message.notifyName, message.index, message.args);
       }
     }
   }
   
-  ClusterManager.prototype.createProxyServerWorker = function() {
+  createProxyServerWorker() {
     const ProxyServer = require('./index');
     const proxyServer = new ProxyServer(this.appConfig, this.configJSON, this.startUpConfig);
     proxyServer.start();
@@ -388,11 +432,11 @@ if (cluster.isMaster) {
     });
   }
   
-  ClusterManager.prototype.getMessageIndex = function () {
+  getMessageIndex() {
     return this.messageIndex++;
   }
   
-  ClusterManager.prototype.callClusterMethodRemote = function (moduleName, importedName, methodName, args, callback, onerror = this.onError, timeout = 1000) {
+  callClusterMethodRemote(moduleName: string, importedName: string, methodName: string, args: any, callback: any, onerror: any = this.onError, timeout: number = 1000) {
     var promise = new Promise((resolve, reject) => {
       var thisMessageIndex = this.getMessageIndex();
       var messageListener = function(message) {
@@ -420,7 +464,7 @@ if (cluster.isMaster) {
     return promise.then(callback, onerror);
   }
   
-  ClusterManager.prototype.notifyCluster = function (notifyName, args, indexInCluster, callback, onerror = this.onError) {
+  notifyCluster(notifyName: string, args: any, indexInCluster: any, callback: any, onerror: any = this.onError) {
     var promise = new Promise((resolve, reject) => {
       process.send({type : MessageTypes.notify, index : indexInCluster, notifyName : notifyName, args : args}, function() {
         resolve(true);
@@ -429,15 +473,15 @@ if (cluster.isMaster) {
     return promise.then(callback, onerror);
   }
 
-  ClusterManager.prototype.initOnce = function (handler) {
-    this.once(Notifications.initOnce, handler);
+ initOnce(handler: any) {
+    (this as any).once(Notifications.initOnce, handler);
   }
 
-  ClusterManager.prototype.onAddDynamicPlugin = function(handler) {
-    this.on(Notifications.addDynamicPlugin, handler);
+  onAddDynamicPlugin(handler: any) {
+    (this as any).on(Notifications.addDynamicPlugin, handler);
   }
 
-  ClusterManager.prototype.addDynamicPlugin = function(pluginDef) {
+  addDynamicPlugin(pluginDef: any) {
     this.callClusterMethodRemote(null, "clusterManager", "notifyWorkersForAddingPlugin", [pluginDef],
       function() {
       },
@@ -446,41 +490,33 @@ if (cluster.isMaster) {
       }
     );
   }
-}
 
-ClusterManager.prototype.start = function(appConfig, configJSON, startUpConfig) {
-  this.appConfig = appConfig;
-  this.configJSON = configJSON;
-  this.startUpConfig = startUpConfig;
-  if (cluster.isMaster) {
-    console.log(`Master ${process.pid} is running.`);
-    this.initializing(function() {
-      this.startWorkers();
-    }.bind(this));
-  } else {
+  start(appConfig: any, configJSON: any, startUpConfig: any) {
+    this.appConfig = appConfig;
+    this.configJSON = configJSON;
+    this.startUpConfig = startUpConfig;
     console.log(`Worker ${this.getIndexInCluster()} pid ${process.pid}`);
     this.createProxyServerWorker();
   }
-}
 
-ClusterManager.prototype.callClusterMethod = function (moduleName, importedName, methodName, argsArray, callback, onerror = this.onError, timeout = 1000) {
-  if (cluster.isMaster) {
-    return this.callClusterMethodLocal(-1, moduleName, importedName, methodName, argsArray, callback);
-  } else {
+  callClusterMethod(moduleName: string, importedName: string, methodName: string, argsArray: any[], callback: any, onerror: any = this.onError, timeout: number = 1000) {
     return this.callClusterMethodRemote(moduleName, importedName, methodName, argsArray, callback, onerror, timeout);
   }
-}
 
-ClusterManager.prototype.notifyOthers = function (notifyName, args, callback, onerror = this.onError) {
-  if (cluster.isMaster) {
-    return this.notifyWorkers(notifyName, args, -1);
-  } else {
+  notifyOthers(notifyName: string, args:any, callback: any, onerror: any = this.onError) {
     return this.notifyCluster(notifyName, args, this.getIndexInCluster(), callback, onerror);
-  }
+  } 
 }
 
-const clusterManager = new ClusterManager();
-process.clusterManager = clusterManager;
+
+
+if(cluster.isMaster) {
+  var clusterManager = new (ClusterManagerMaster as any)();
+}  else {
+  var clusterManager = new (ClusterManagerWorker as any)();
+}
+
+(process as  any).clusterManager = clusterManager;
 
 module.exports.clusterManager = clusterManager;
 /*

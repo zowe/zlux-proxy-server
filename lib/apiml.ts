@@ -8,7 +8,7 @@
   
   Copyright Contributors to the Zowe Project.
 */
-const Promise = require("bluebird");
+const BBPromise = require("bluebird");
 const eureka = require('eureka-js-client').Eureka;
 const zluxUtil = require('./util');
 
@@ -72,17 +72,23 @@ const MEDIATION_LAYER_INSTANCE_DEFAULTS = {
   }
 };
 
-function ApimlConnector({ hostName, ipAddr, httpPort, httpsPort, apimlHost, 
-    apimlPort, tlsOptions }) {
-  Object.assign(this, { hostName, ipAddr, httpPort, httpsPort, apimlHost, 
-    apimlPort, tlsOptions });
-  this.vipAddress = hostName;
-}
-
-ApimlConnector.prototype = {
-  constructor: ApimlConnector,
+export class ApimlConnector{
+  private hostName: string;
+  private ipAddr: string;
+  private httpPort: number;
+  private httpsPort: number;
+  private apimlHost: string;
+  private apimlPort: number;
+  private tlsOptions: any;
+  private vipAddress: string;
+  private zluxServerEurekaClient: any;
   
-  _makeMainInstanceProperties(overrides) {
+  constructor({ hostName, ipAddr, httpPort, httpsPort, apimlHost, apimlPort, tlsOptions }: any) {
+    Object.assign(this, { hostName, ipAddr, httpPort, httpsPort, apimlHost, apimlPort, tlsOptions });
+    this.vipAddress = hostName;
+  }
+  
+  _makeMainInstanceProperties(overrides?: boolean) {
     const instance = Object.assign({}, MEDIATION_LAYER_INSTANCE_DEFAULTS);
     Object.assign(instance, overrides);
 
@@ -139,7 +145,7 @@ ApimlConnector.prototype = {
      log.debug("API ML registration settings:", JSON.stringify(instance));
 
     return instance;
-  },
+  }
 
   /*
    * TODO: commented out as this is a stretch goal
@@ -179,8 +185,8 @@ ApimlConnector.prototype = {
     }
     log.debug("zluxProxyServerInstanceConfig: " 
         + JSON.stringify(zluxProxyServerInstanceConfig, null, 2))
-    const url = `https://${this.apimlHost}:${this.apimlPort}/eureka/apps`
-    zluxProxyServerInstanceConfig.eureka.serviceUrls = {
+    const url = `https://${this.apimlHost}:${this.apimlPort}/eureka/apps`;
+    (zluxProxyServerInstanceConfig.eureka as any).serviceUrls = {
       'default': [
         url
       ]};
@@ -200,7 +206,7 @@ ApimlConnector.prototype = {
         }
       });
     });
-  },
+  }
   
   /*
    * TODO: commented out as this is a stretch goal

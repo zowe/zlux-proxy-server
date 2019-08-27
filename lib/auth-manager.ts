@@ -11,7 +11,7 @@
 */
 
 'use strict';
-const Promise = require('bluebird');
+const BBPromise = require('bluebird');
 const UNP = require('./unp-constants');
 const configService = require('../plugins/config/lib/configService.js');
 const zluxUtil = require('./util');
@@ -28,8 +28,9 @@ const acceptAllHandler = {
 }
 
 class AuthPluginContext {
+  public logger: any;
   constructor(plugin) {
-    this.logger = global.COM_RS_COMMON_LOGGER.makeComponentLogger(plugin.identifier);
+    this.logger = (global as any).COM_RS_COMMON_LOGGER.makeComponentLogger(plugin.identifier);
   }
 }
 
@@ -38,37 +39,40 @@ class AuthPluginContext {
  * - keeps track of loaded authentication plugins
  * - ensures that auth configuration is consistent with the global configuration
  */
-function AuthManager(options) {
-  if (!AuthManager.prototype.isConfigValid(options.config)) {
-    process.exit(UNP.UNP_EXIT_AUTH_ERROR);
-  }
-  Object.assign(this, options);
-  Object.assign(this, {
-    handlers: {},
-    defaultType: options.config.defaultAuthentication,
-    authTypes: {},
-    pendingPlugins: [],
-    rbacEnabled: !!options.config.rbac
-  });
-  if (!this.sessionTimeoutMs) {
-    this.sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
-  }
-  if (!this.rbacEnabled) {
-    bootstrapLogger.warn('RBAC is disabled in the configuration. All authenticated'
-        + ' users will have access to all servces. Enable RBAC in the configuration'
-        + " to control users' access to individual services");
-  }
-}
-AuthManager.prototype = {
-  constructor: AuthManager,
-  //The dataserviceAuthentication section of server configuration
-  config: null,
-  handlers : null,
-  defaultType: null,
-  authTypes: null,
-  pendingPlugins: null,
+export class AuthManager {
 
-  isConfigValid(serviceAuthJSON) {
+  //The dataserviceAuthentication section of server configuration
+  private config: any;
+  private handlers : any;
+  private defaultType: any;
+  private authTypes: any;
+  private pendingPlugins: any[];
+  private sessionTimeoutMs: number;
+  private rbacEnabled: boolean;
+
+  constructor(options: any) {
+    if (!AuthManager.prototype.isConfigValid(options.config)) {
+      process.exit(UNP.UNP_EXIT_AUTH_ERROR);
+    }
+    Object.assign(this, options);
+    Object.assign(this, {
+      handlers: {},
+      defaultType: options.config.defaultAuthentication,
+      authTypes: {},
+      pendingPlugins: [],
+      rbacEnabled: !!options.config.rbac
+    });
+    if (!this.sessionTimeoutMs) {
+      this.sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
+    }
+    if (!this.rbacEnabled) {
+      bootstrapLogger.warn('RBAC is disabled in the configuration. All authenticated'
+          + ' users will have access to all servces. Enable RBAC in the configuration'
+          + " to control users' access to individual services");
+    }
+  }
+
+  isConfigValid(serviceAuthJSON: any) {
     if (!serviceAuthJSON || !serviceAuthJSON.implementationDefaults
         || !serviceAuthJSON.defaultAuthentication) {
       bootstrapLogger.warn('Dataservice authentication definition is not present'
@@ -77,14 +81,14 @@ AuthManager.prototype = {
       return false;
     }
     return true;
-  },
+  }
   
-  registerAuthenticator(plugin) {
+  registerAuthenticator(plugin: any) {
     this.pendingPlugins.push(plugin);
-  },
+  }
   
   
-  loadAuthenticators: Promise.coroutine(function*(config) {
+  loadAuthenticators = BBPromise.coroutine(function*(config) {
     let plugin;
     while ((plugin = this.pendingPlugins.pop()) !== undefined) {
       try {
@@ -115,7 +119,7 @@ AuthManager.prototype = {
         authLog.warn(`error loading auth plugin ${plugin.identifier}: ` + e);
       }
     }
-  }),
+  })
   
   /*
     scans the authJSON to see what plugins were requested but not present. 
@@ -144,9 +148,9 @@ AuthManager.prototype = {
           + ` default authentication type of ${this.config.defaultAuthentication}.`);
       process.exit(UNP.UNP_EXIT_AUTH_ERROR);    
     }
-  },
+  }
   
-  authPluginRequested(pluginID, pluginCategory) {
+  authPluginRequested(pluginID: number, pluginCategory: string) {
     const category = this.config.implementationDefaults[pluginCategory];
     if (!(category && category.plugins)) {
       bootstrapLogger.warn("Implementation defaults for "+pluginCategory+" was not an"
@@ -161,9 +165,9 @@ AuthManager.prototype = {
       }
     }
     return false;
-  }, 
+  } 
   
-  getBestAuthenticationHandler(authType, criteria) {
+  getBestAuthenticationHandler(authType: any, criteria?: any) {
     if (!authType) {
       authType = this.defaultType;
     }
@@ -175,11 +179,11 @@ AuthManager.prototype = {
       handler = this.handlers[handlerIDs[0]];
     }
     return handler;
-  },
+  }
   
   getAllHandlers() {
-    return Object.values(this.handlers);
-  },
+    return (Object as any).values(this.handlers);
+  }
   
   getAuthHandlerForService(authenticationData) {
     if (!authenticationData) {
@@ -191,7 +195,7 @@ AuthManager.prototype = {
     }    
     const authType = authenticationData.authType;
     return this.getBestAuthenticationHandler(authType);
-  },
+  }
   
   isRbacEnabled() {
     return this.rbacEnabled;

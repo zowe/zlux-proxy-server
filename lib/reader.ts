@@ -12,19 +12,19 @@
 
 const readline = require('readline');
 
-function Reader() {
-  this.readlineReader = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-}
-Reader.prototype = {
-  constructor: Reader,
-  readlineReader: null,
+export class Reader{
+  private readlineReader: any;
 
-  readPassword(question) {
+  constructor() {
+    this.readlineReader = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+  }
+
+  readPassword(question: any) {
     return new Promise((resolve, reject) => {
-      const stdin = process.openStdin();
+      const stdin = (process as any).openStdin();
       stdin.on('data', function(c) {
         c+='';
         switch (c) {
@@ -42,7 +42,7 @@ Reader.prototype = {
         this.readlineReader.history = this.readlineReader.history.slice(1); 
       });
     })
-  },
+  }
 
   close() {
     this.readlineReader.close();
@@ -52,20 +52,19 @@ Reader.prototype = {
 
 module.exports = Reader;
 
-
-_unitTest = false;
+const _unitTest: boolean = false;
 if (_unitTest) {
-  const Promise = require('bluebird');
-  unitTest = Promise.coroutine(function* (app) {
+  const BBPromise = require('bluebird');
+  let unitTest = BBPromise.coroutine(function* (app) {
     let password;
-    const r1 = makeReader();
+    const r1 = new Reader();
     try {
       password = yield r1.readPassword("Enter password (should not be displayed): ");
       console.log("password is: ", password);
     } finally {
       r1.close();
     }
-    const r2 = makeReader();
+    const r2 = new Reader();
     try {
       password = yield r2.readPassword("One more time: ");
       console.log("password is: ", password);

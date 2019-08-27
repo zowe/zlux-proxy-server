@@ -12,7 +12,7 @@
 
 'use strict';
 
-const Promise = require('bluebird');
+const BBPromise = require('bluebird');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -29,7 +29,7 @@ const contentLogger = util.loggers.contentLogger;
 const childLogger = util.loggers.childLogger;
 const networkLogger = util.loggers.network;
 
-function readCiphersFromArray(stringArray) {
+function readCiphersFromArray(stringArray: string[]) {
   if (stringArray && Array.isArray(stringArray)) {
     let uppercase = [];
     for (let i = 0; i < stringArray.length; i++) {
@@ -46,7 +46,7 @@ function readCiphersFromArray(stringArray) {
 };
 
 
-function readTlsOptionsFromConfig(config, httpsOptions) {
+export function readTlsOptionsFromConfig(config: any, httpsOptions: any) {
   if (config.https.pfx) {
     try {
       httpsOptions.pfx = fs.readFileSync(config.https.pfx);
@@ -75,23 +75,23 @@ function readTlsOptionsFromConfig(config, httpsOptions) {
   }
 }
   
-function WebServer() {
-  this.config = null;
-}
-WebServer.prototype = {
-  constructor: WebServer,
-  config: null,
-  httpOptions: null,
-  httpsOptions: null,
-  httpsServers: [],
-  httpServers: [],
-  expressWsHttps: [],
-  expressWsHttp: [],
+export class WebServer{
+  private config: any;
+  private httpsOptions: any;
+  private httpOptions: any;
+  private httpServers: any[];
+  private httpsServers: Array<any> = [];
+  private expressWsHttps: Array<any> = [];
+  private expressWsHttp: Array<any> = [];
 
-  _setErrorLogger(server, type, ipAddress, port) {
+  constructor() {
+    this.config = null;
+  }
+
+  _setErrorLogger(server: any, type: any, ipAddress: any, port: number) {
     //the server object will not tell the ipAddr & port unless it has successfully connected,
     //making logging poor unless passed
-    server.on('error',(e)=> {
+    server.on('error',(e: any)=> {
       switch (e.code) {
       case 'EADDRINUSE':
         networkLogger.severe(`Could not listen on address ${ipAddress}:${port}. It is already in use by another process.`);
@@ -110,13 +110,13 @@ WebServer.prototype = {
       }
     });
 
-  },
+  }
   
   getTlsOptions() {
     return this.httpsOptions;
-  },
+  }
 
-  validateAndPreprocessConfig: Promise.coroutine(function *validateAndPreprocessConfig(config) {
+  validateAndPreprocessConfig = BBPromise.coroutine(function *validateAndPreprocessConfig(config: any) {
     let canRun = false;
     if (config.http && config.http.port) {
       const uniqueIps = yield util.uniqueIps(config.http.ipAddresses);
@@ -148,9 +148,9 @@ WebServer.prototype = {
       config.https.ipAddresses = uniqueIps;
     }
     return canRun;
-  }),
+  })
 
-  setConfig(config) {
+  setConfig(config: any) {
     this.config = config;
     if (this.config.http && this.config.http.port) {
       this.httpOptions = {};
@@ -183,9 +183,9 @@ WebServer.prototype = {
       
       readTlsOptionsFromConfig(this.config, this.httpsOptions);
     }
-  },
+  }
 
-  startListening: Promise.coroutine(function* (app) {
+  startListening = BBPromise.coroutine(function* (app: any) {
     if (this.config.https && this.config.https.port) {
       const port = this.config.https.port;
       for (let ipAddress of this.config.https.ipAddresses) {
@@ -226,9 +226,9 @@ WebServer.prototype = {
         this.callListen(httpServer, 'http', 'HTTP', ipAddress, port);
       }
     }
-  }),
+  })
 
-  callListen(methodServer, methodName, methodNameForLogging, ipAddress, port) {
+  callListen(methodServer: any, methodName: string, methodNameForLogging: string, ipAddress: any, port: number) {
     const addressForLogging = `${ipAddress}:${port}`;
     const logFunction = function () {
       networkLogger.log(bootstrapLogger.INFO,`(${methodNameForLogging})  `
@@ -237,7 +237,7 @@ WebServer.prototype = {
     networkLogger.log(bootstrapLogger.INFO, `(${methodNameForLogging})  `
         + `About to start listening on ${addressForLogging}`);
     methodServer.listen(port, ipAddress, logFunction);
-  },
+  }
 
   close() {
     this.httpServers.forEach((server)=> {

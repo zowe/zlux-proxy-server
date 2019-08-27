@@ -18,31 +18,34 @@ const childLogger = util.loggers.childLogger;
 const langLogger = util.loggers.langManager;
 
 
-function ProcessManager(exitOnException, langManagers) {
-  this.childProcesses = [];
-  this.exitOnException = exitOnException;
-  this.cleanupFunctions = [];
-  process.on('SIGTERM', () => this.endServer('SIGTERM', langManagers));
-  process.on('SIGINT', () => this.endServer('SIGINT', langManagers));
-  process.on('SIGHUP', () => this.endServer('SIGHUP', langManagers));
-  const uncaughtHandler = (err)=> {
-    bootstrapLogger.warn('Uncaught exception found. Error:\n'+err.stack);  
-    if (this.exitOnException) {
-      bootstrapLogger.warn('Ending server process due to uncaught exception.');
-      process.removeListener('uncaughtException', uncaughtHandler);      
-      this.endServer('SIGQUIT', langManagers);    
-    }
-  };
-  process.on('uncaughtException', uncaughtHandler);
-  process.on('unhandledRejection', (err) => {
-    console.log('unhandledRejection', err);
-  });
-}
-ProcessManager.prototype = {
-  constructor: ProcessManager,
-  childProcesses: null,
+export class ProcessManager{
+  private childProcesses: any[];
+  private exitOnException: boolean;
+  private cleanupFunctions: any[];
+
   
-  spawn(childProcessConfig) {
+  constructor(exitOnException: boolean, langManagers: any) {
+    this.childProcesses = [];
+    this.exitOnException = exitOnException;
+    this.cleanupFunctions = [];
+    process.on('SIGTERM', () => this.endServer('SIGTERM', langManagers));
+    process.on('SIGINT', () => this.endServer('SIGINT', langManagers));
+    process.on('SIGHUP', () => this.endServer('SIGHUP', langManagers));
+    const uncaughtHandler = (err)=> {
+      bootstrapLogger.warn('Uncaught exception found. Error:\n'+err.stack);  
+      if (this.exitOnException) {
+        bootstrapLogger.warn('Ending server process due to uncaught exception.');
+        process.removeListener('uncaughtException', uncaughtHandler);      
+        this.endServer('SIGQUIT', langManagers);    
+      }
+    };
+    process.on('uncaughtException', uncaughtHandler);
+    process.on('unhandledRejection', (err) => {
+      console.log('unhandledRejection', err);
+    });
+  }
+  
+  spawn(childProcessConfig: any) {
     const args = childProcessConfig.args ? childProcessConfig.args : [];
     const childProcess = spawn(childProcessConfig.path, args);
     this.childProcesses.push(childProcess);
@@ -55,31 +58,31 @@ ProcessManager.prototype = {
     childProcess.on('close', function(code) {
       childLogger.info('[Path=' + childProcessConfig.path + '] exited, code: ' + code);
     });
-  },
+  }
 
-   endChildren(signal) {
-     for (const childProcess of this.childProcesses) {
-       if (childProcess.pid) { //nothing to kill if no pid
-         childProcess.kill(signal);
-       }
-     }
-   },
+  endChildren(signal: any) {
+    for (const childProcess of this.childProcesses) {
+      if (childProcess.pid) { //nothing to kill if no pid
+        childProcess.kill(signal);
+      }
+    }
+  }
 
-   addCleanupFunction(func) {
-     this.cleanupFunctions.push(func);
-   },
+  addCleanupFunction(func: any) {
+    this.cleanupFunctions.push(func);
+  }
 
-   performCleanup() {
-     for (const cleanupFunction of this.cleanupFunctions) {
-       try {
-         cleanupFunction.call();
-       } catch (err) {
-         bootstrapLogger.warn('Exception at server cleanup function:\n'+err.stack); 
-       }
-     }
-   },
+  performCleanup() {
+    for (const cleanupFunction of this.cleanupFunctions) {
+      try {
+        cleanupFunction.call();
+      } catch (err) {
+        bootstrapLogger.warn('Exception at server cleanup function:\n'+err.stack); 
+      }
+    }
+  }
 
-  endServer(signal, langManagers) {
+  endServer(signal: any, langManagers: any) {
     langLogger.info(`Stopping managers`);
     let i = 0;
     let t = this;

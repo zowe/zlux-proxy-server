@@ -188,7 +188,8 @@ class ZssHandler {
           resolve({ success: true, username: sessionState.username,
                     expms: expiresMs});
         } else {
-          let res = { success: false, error: {message: `ZSS ${response.statusCode} ${response.statusMessage}`}};
+          let res = { success: false, error: {message: `ZSS ${response.statusCode} ${response.statusMessage}`,
+                                              body: response.body}};
           if (response.statusCode === 500) {
             res.reason = 'ConnectionError';
           } else {

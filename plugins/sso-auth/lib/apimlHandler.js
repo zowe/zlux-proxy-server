@@ -89,7 +89,8 @@ class ApimlHandler {
       }
 
       const req = https.request(options, (res) => {
-        res.on('data', (d) => {});
+        let data = [];
+        res.on('data', (d) => {data.push(d)});
         res.on('end', () => {
           let apimlCookie;
           if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -104,7 +105,8 @@ class ApimlHandler {
               success: false,
               reason: 'Unknown',
               error: {
-                message: `APIML ${res.statusCode} ${res.statusMessage}`
+                message: `APIML ${res.statusCode} ${res.statusMessage}`,
+                body: Buffer.concat(data).toString()
               }
             };
             //Seems that when auth is first called, it may not be loaded yet, so you get a 405.

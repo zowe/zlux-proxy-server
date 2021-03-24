@@ -62,7 +62,7 @@
     "@types/node": "~6.0.0",
     "chai": "~4.2.0",
     "chai-http": "~4.2.0",
-    "typescript": "2.7.1"
+    "typescript": "3.1.1"
   },
   "optionalDependencies": {
     "keyring_js": "~1.0.0"

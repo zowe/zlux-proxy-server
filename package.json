@@ -55,7 +55,7 @@
     "mkdirp": "~0.5.1",
     "ncp": "~2.0.0",
     "node-forge": "^0.10.0",
-    "normalize-url": "~4.3.0",
+    "normalize-url": "~4.5.0",
     "require-from-string": "~2.0.2",
     "rimraf": "~2.6.3",
     "semver": "~5.5.1",

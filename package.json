@@ -60,7 +60,7 @@
     "rimraf": "~2.6.3",
     "semver": "~5.5.1",
     "swagger-parser": "~6.0.5",
-    "ws": "^6.0.0",
+    "ws": "^6.2.2",
     "yauzl": "~2.10.0"
   },
   "devDependencies": {

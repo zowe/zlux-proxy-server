@@ -11,6 +11,7 @@ This repo is part of the app-server Zowe Component, and the change logs here may
 - Enhancement: Updated proxy utility to treat PATCH similarly to PUT and POST
 - Cleanup: Removed 'x-powered-by' header
 - Enhancement: Get list of Discovery Services using environment variable, and provide the list for Eureka JS Client, in order to have it failover connection to the next one on the list when the one its currently talking to fails.
+- Enhancement: dataservice command callRootService now calls agent directly if root service originated from the app-server agent. This should improve performance and reduce scenarios where loopback activity is needed.
 
 ## 1.22.0
 

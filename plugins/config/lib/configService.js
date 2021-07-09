@@ -2328,7 +2328,7 @@ function getJSONFromLocation(relativeLocation,directories,startScope,endScope,pl
       if (updatedConfiguration) {
         logger.debug("ZWED0256I", JSON.stringify(updatedConfiguration)); //logger.debug("Configuration is now = "+JSON.stringify(updatedConfiguration));
         var filesFound = Object.keys(updatedConfiguration);
-        for (var i = 0; i < filesFound; i++) {
+        for (var i = 0; i < filesFound.length; i++) {
           configuration[filesFound[i]] = updatedConfiguration[filesFound[i]];
         }
       }
